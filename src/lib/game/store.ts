@@ -5,6 +5,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
+  ACHIEVEMENTS,
   ATTACK_INTERVAL_BASE_MS,
   ATTACK_INTERVAL_MIN_MS,
   BOSS_INTERVAL,
@@ -17,23 +18,35 @@ import {
   CHEST_LIFE_MS_MAX,
   CHEST_LIFE_MS_MIN,
   CHEST_VISUALS,
+  CRAFT_REQUIRED,
+  DAILY_POOL,
+  DUNGEON_HP_MULT_PER_FLOOR,
+  DUNGEON_KILLS_PER_FLOOR,
+  DUNGEON_NAMES,
+  DUNGEON_REWARD_MULT_PER_FLOOR,
   ELITE_CHANCE,
   ELITE_HP_MULT,
   ELITE_REWARD_MULT,
   ENEMY_TYPES,
+  EQUIP_SETS,
   EQUIP_SLOTS,
   HERO_BASE,
+  HERO_SKILLS,
   KEY_BY_ID,
   KEY_DROP_RATE_PER_CLICK,
   KEY_TYPES,
   MAX_CHESTS_ON_SCREEN,
   RARITIES,
   RARITY_BY_ID,
+  SACRIFICE_LUCK_PER_ITEM,
+  SET_BY_ID,
   SHOP_BOOSTERS,
   xpForLevel,
+  type Achievement,
   type BattleEnemy,
   type BattleState,
   type ChestVisualKind,
+  type DailyQuest,
   type EquipSlotId,
   type InventoryStack,
   type ItemStats,
@@ -52,6 +65,8 @@ interface GameStats {
   bestRarityFound: RarityId | null;
   enemiesKilled: number;
   heroLevel: number;
+  bossKills: number;
+  eliteKills: number;
 }
 
 // Надетый предмет (один экземпляр, не стэк)
@@ -64,9 +79,21 @@ export interface EquippedItem {
   baseValue: number;
   stats: ItemStats;
   slot: EquipSlotId | null;
+  set: string | null;
 }
 
 type EquippedMap = Partial<Record<EquipSlotId, EquippedItem>>;
+
+// Состояние одного дейлика (выбран сегодня + прогресс)
+interface DailyState {
+  date: string;             // YYYY-MM-DD
+  quests: { id: string; progress: number; claimed: boolean }[];
+}
+
+// Состояние одного достижения
+interface AchievementState {
+  claimed: boolean;
+}
 
 interface GameState {
   hydrated: boolean;
@@ -94,6 +121,16 @@ interface GameState {
   // последний выпавший предмет (для показа анимации)
   lastDrop: { uid: string; itemId: string; name: string; rarity: RarityId; emoji: string; value: number; fromChest: string } | null;
   clearLastDrop: () => void;
+
+  // последнее всплывающее уведомление (достижение/дейлик/крафт)
+  lastNotice: { id: string; text: string; color: string; emoji: string } | null;
+  clearLastNotice: () => void;
+
+  // достижения
+  achievements: Record<string, AchievementState>;
+
+  // дейлики
+  dailies: DailyState;
 
   // статистика
   stats: GameStats;
@@ -123,6 +160,16 @@ interface GameState {
   unequipSlot: (slot: EquipSlotId) => void;
   computeHeroStats: () => ItemStats;
   computeAttackIntervalMs: () => number;
+  computeActiveSets: () => { setId: string; count: number; bonus2: boolean; bonus4: boolean; bonus6: boolean }[];
+
+  // крафт и жертва
+  craftItems: (itemId: string) => boolean;
+  sacrificeItem: (uid: string, count: number) => boolean;
+
+  // достижения и дейлики
+  claimAchievement: (id: string) => boolean;
+  claimDaily: (id: string) => boolean;
+  resetDailiesIfNewDay: () => void;
 
   // авто-бой
   spawnEnemy: () => void;
@@ -236,13 +283,17 @@ function isSlotCompatibleFn(itemSlot: EquipSlotId | null, targetSlot: EquipSlotI
 
 // Создаёт врага по случайному типу. На каждом BOSS_INTERVAL-убийстве спавним
 // босса (5x HP, 5x награда), иначе с шансом ELITE_CHANCE — элитного (2x).
+// HP врага дополнительно множится на этаж подземелья (×1.5 за каждый этаж).
 function makeEnemy(enemiesKilled: number): BattleEnemy {
   const t = pickRandom(ENEMY_TYPES);
   const isBoss = enemiesKilled > 0 && enemiesKilled % BOSS_INTERVAL === 0;
   const isElite = !isBoss && Math.random() < ELITE_CHANCE;
+  const floor = getCurrentFloor(enemiesKilled);
+  const floorMult = floorHpMult(floor);
   let hp = t.hp;
-  if (isBoss) hp = Math.round(t.hp * BOSS_HP_MULT);
-  else if (isElite) hp = Math.round(t.hp * ELITE_HP_MULT);
+  if (isBoss) hp = Math.round(t.hp * BOSS_HP_MULT * floorMult);
+  else if (isElite) hp = Math.round(t.hp * ELITE_HP_MULT * floorMult);
+  else hp = Math.round(t.hp * floorMult);
   return {
     id: `enemy-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
     typeId: t.id,
@@ -254,7 +305,7 @@ function makeEnemy(enemiesKilled: number): BattleEnemy {
   };
 }
 
-// Суммарные статы героя
+// Суммарные статы героя с учётом сет-бонусов
 function computeHeroStatsFn(equipped: EquippedMap, heroLevel: number): ItemStats {
   let atk = HERO_BASE.attack + heroLevel;
   let def = HERO_BASE.defense;
@@ -268,7 +319,72 @@ function computeHeroStatsFn(equipped: EquippedMap, heroLevel: number): ItemStats
     spd += item.stats.speed;
     luk += item.stats.luck;
   }
+  // сет-бонусы
+  const setCounts: Record<string, number> = {};
+  for (const key of Object.keys(equipped) as EquipSlotId[]) {
+    const item = equipped[key];
+    if (item?.set) setCounts[item.set] = (setCounts[item.set] ?? 0) + 1;
+  }
+  for (const setId of Object.keys(setCounts)) {
+    const def_set = SET_BY_ID[setId];
+    if (!def_set) continue;
+    const cnt = setCounts[setId];
+    let bonus: { stat: keyof ItemStats; mult: number } | undefined;
+    if (cnt >= 6 && def_set.bonus6) bonus = def_set.bonus6;
+    else if (cnt >= 4) bonus = def_set.bonus4;
+    else if (cnt >= 2) bonus = def_set.bonus2;
+    if (!bonus) continue;
+    if (bonus.stat === "attack") atk = Math.round(atk * (1 + bonus.mult));
+    else if (bonus.stat === "defense") def = Math.round(def * (1 + bonus.mult));
+    else if (bonus.stat === "speed") spd = Math.round(spd * (1 + bonus.mult));
+    else if (bonus.stat === "luck") luk = Math.round(luk * (1 + bonus.mult));
+  }
   return { attack: atk, defense: def, speed: spd, luck: luk };
+}
+
+// Текущий этаж подземелья (1+)
+function getCurrentFloor(enemiesKilled: number): number {
+  return Math.floor(enemiesKilled / DUNGEON_KILLS_PER_FLOOR) + 1;
+}
+// Множитель HP для текущего этажа
+function floorHpMult(floor: number): number {
+  return Math.pow(DUNGEON_HP_MULT_PER_FLOOR, floor - 1);
+}
+// Множитель награды для текущего этажа
+function floorRewardMult(floor: number): number {
+  return Math.pow(DUNGEON_REWARD_MULT_PER_FLOOR, floor - 1);
+}
+
+// Дата в формате YYYY-MM-DD (локально)
+function todayStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`;
+}
+
+// Генерация 3 случайных дейликов на сегодня
+function rollDailyQuests(): { id: string; progress: number; claimed: boolean }[] {
+  const pool = [...DAILY_POOL];
+  const picked: { id: string; progress: number; claimed: boolean }[] = [];
+  for (let i = 0; i < 3 && pool.length > 0; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    picked.push({ id: pool[idx].id, progress: 0, claimed: false });
+    pool.splice(idx, 1);
+  }
+  return picked;
+}
+
+// Метрики для достижений/дейликов — получают значение из stats
+function getMetricValue(stats: GameStats, metric: Achievement["metric"]): number {
+  switch (metric) {
+    case "clicks": return stats.totalClicks;
+    case "chestsOpened": return stats.chestsOpened;
+    case "itemsFound": return stats.itemsFound;
+    case "enemiesKilled": return stats.enemiesKilled;
+    case "heroLevel": return stats.heroLevel;
+    case "bossKills": return stats.bossKills;
+    case "eliteKills": return stats.eliteKills;
+    case "moneyEarned": return stats.moneyEarned;
+  }
 }
 
 export const useGameStore = create<GameState>()(
@@ -293,6 +409,9 @@ export const useGameStore = create<GameState>()(
         lastReward: null,
       },
       lastDrop: null,
+      lastNotice: null,
+      achievements: {},
+      dailies: { date: todayStr(), quests: rollDailyQuests() },
       stats: {
         totalClicks: 0,
         chestsOpened: 0,
@@ -301,6 +420,8 @@ export const useGameStore = create<GameState>()(
         bestRarityFound: null,
         enemiesKilled: 0,
         heroLevel: 1,
+        bossKills: 0,
+        eliteKills: 0,
       },
 
       clickClicker: () => {
@@ -469,6 +590,7 @@ export const useGameStore = create<GameState>()(
           count: 1,
           slot: item.slot,
           stats: item.stats,
+          set: item.set,
         };
 
         // мерж в инвентарь
@@ -619,6 +741,7 @@ export const useGameStore = create<GameState>()(
           baseValue: stack.baseValue,
           stats: stack.stats,
           slot: stack.slot,
+          set: stack.set,
         };
         newEquipped[targetSlot] = equippedItem;
 
@@ -652,6 +775,7 @@ export const useGameStore = create<GameState>()(
                 count: 1,
                 slot: displaced.slot,
                 stats: displaced.stats,
+                set: displaced.set,
               },
             ];
           }
@@ -688,6 +812,7 @@ export const useGameStore = create<GameState>()(
               count: 1,
               slot: item.slot,
               stats: item.stats,
+              set: item.set,
             },
           ];
         }
@@ -706,6 +831,210 @@ export const useGameStore = create<GameState>()(
           ATTACK_INTERVAL_BASE_MS - stats.speed * 25 - (state.battle.heroLevel - 1) * 12;
         return Math.max(ATTACK_INTERVAL_MIN_MS, interval);
       },
+
+      computeActiveSets: () => {
+        const state = get();
+        const counts: Record<string, number> = {};
+        for (const key of Object.keys(state.equipped) as EquipSlotId[]) {
+          const item = state.equipped[key];
+          if (item?.set) counts[item.set] = (counts[item.set] ?? 0) + 1;
+        }
+        return Object.keys(counts).map((setId) => {
+          const def = SET_BY_ID[setId];
+          const count = counts[setId];
+          return {
+            setId,
+            count,
+            bonus2: count >= 2,
+            bonus4: count >= 4,
+            bonus6: count >= 6 && !!def?.bonus6,
+          };
+        });
+      },
+
+      // ========== КРАФТ И ЖЕРТВА ==========
+
+      craftItems: (itemId) => {
+        const state = get();
+        const stack = state.inventory.find((s) => s.itemId === itemId);
+        if (!stack || stack.count < CRAFT_REQUIRED) return false;
+        // предмет должен иметь редкость < divine
+        const rarityOrder: RarityId[] = ["common", "uncommon", "rare", "epic", "legendary", "mythic", "divine"];
+        const idx = rarityOrder.indexOf(stack.rarity);
+        if (idx < 0 || idx >= rarityOrder.length - 1) return false;
+        const nextRarity = rarityOrder[idx + 1];
+        // выбираем случайный предмет nextRarity с тем же slot
+        const sameSlotPool = ITEMS_BY_RARITY[nextRarity].filter(
+          (i) => i.slot === stack.slot && (!stack.set || i.set === stack.set),
+        );
+        const pool = sameSlotPool.length > 0 ? sameSlotPool : ITEMS_BY_RARITY[nextRarity];
+        const newItem = pickRandom(pool);
+        // списываем CRAFT_REQUIRED предметов
+        const remaining = stack.count - CRAFT_REQUIRED;
+        let newInventory: InventoryStack[];
+        if (remaining > 0) {
+          newInventory = state.inventory.map((s) =>
+            s.itemId === itemId ? { ...s, count: remaining } : s,
+          );
+        } else {
+          newInventory = state.inventory.filter((s) => s.itemId !== itemId);
+        }
+        // добавляем новый предмет (стэк с тем же itemId)
+        const existingNew = findStackFor(newInventory, newItem.id);
+        if (existingNew) {
+          newInventory = newInventory.map((s) =>
+            s.itemId === newItem.id ? { ...s, count: s.count + 1 } : s,
+          );
+        } else {
+          newInventory = [
+            ...newInventory,
+            {
+              uid: `stack-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+              itemId: newItem.id,
+              name: newItem.name,
+              rarity: newItem.rarity,
+              emoji: newItem.emoji,
+              baseValue: newItem.baseValue,
+              count: 1,
+              slot: newItem.slot,
+              stats: newItem.stats,
+              set: newItem.set,
+            },
+          ];
+        }
+        set({
+          inventory: newInventory,
+          lastNotice: {
+            id: `craft-${Date.now()}`,
+            text: `Скрафчено: ${newItem.name}`,
+            color: "#fbbf24",
+            emoji: "⚗",
+          },
+        });
+        return true;
+      },
+
+      sacrificeItem: (uid, count) => {
+        const state = get();
+        const stack = state.inventory.find((s) => s.uid === uid || s.itemId === uid);
+        if (!stack) return false;
+        const actualCount = Math.min(count, stack.count);
+        if (actualCount <= 0) return false;
+        // добавляем permanent luck = count * SACRIFICE_LUCK_PER_ITEM
+        const luckGain = actualCount * SACRIFICE_LUCK_PER_ITEM;
+        const now = Date.now();
+        const existing = state.luckBoost;
+        let newBoost: LuckBoost;
+        if (existing && existing.untilTs > now) {
+          newBoost = {
+            multiplier: Math.min(0.95, existing.multiplier + luckGain),
+            untilTs: now + 30 * 60 * 1000, // продлеваем на 30 мин
+          };
+        } else {
+          newBoost = {
+            multiplier: Math.min(0.95, luckGain),
+            untilTs: now + 30 * 60 * 1000,
+          };
+        }
+        // убираем actualCount из стэка
+        const remaining = stack.count - actualCount;
+        let newInventory: InventoryStack[];
+        if (remaining > 0) {
+          newInventory = state.inventory.map((s) =>
+            s.uid === stack.uid ? { ...s, count: remaining } : s,
+          );
+        } else {
+          newInventory = state.inventory.filter((s) => s.uid !== stack.uid);
+        }
+        set({
+          inventory: newInventory,
+          luckBoost: newBoost,
+          lastNotice: {
+            id: `sac-${Date.now()}`,
+            text: `Жертва: +${Math.round(luckGain * 100)}% удачи на 30 мин`,
+            color: "#a855f7",
+            emoji: "🙏",
+          },
+        });
+        return true;
+      },
+
+      // ========== ДОСТИЖЕНИЯ И ДЕЙЛИКИ ==========
+
+      claimAchievement: (id) => {
+        const state = get();
+        const ach = ACHIEVEMENTS.find((a) => a.id === id);
+        if (!ach) return false;
+        const achState = state.achievements[id];
+        if (achState?.claimed) return false;
+        // проверяем что цель достигнута
+        const value = getMetricValue(state.stats, ach.metric);
+        if (value < ach.goal) return false;
+        // выдаём награду
+        const newKeys = ach.reward.keys
+          ? { ...state.keys, [ach.reward.keys.rarity]: state.keys[ach.reward.keys.rarity] + ach.reward.keys.count }
+          : state.keys;
+        set({
+          keys: newKeys,
+          money: state.money + ach.reward.money,
+          achievements: { ...state.achievements, [id]: { claimed: true } },
+          lastNotice: {
+            id: `ach-${id}-${Date.now()}`,
+            text: `Достижение: ${ach.name} (+${ach.reward.money}💰${ach.reward.keys ? ` +${ach.reward.keys.count} ${ach.reward.keys.rarity} ключ` : ""})`,
+            color: "#fbbf24",
+            emoji: ach.emoji,
+          },
+        });
+        return true;
+      },
+
+      claimDaily: (id) => {
+        const state = get();
+        const dq = state.dailies.quests.find((q) => q.id === id);
+        if (!dq || dq.claimed) return false;
+        const def = DAILY_POOL.find((d) => d.id === id);
+        if (!def) return false;
+        // прогресс = текущее значение метрики - baseline (dq.progress = значение на старте дня)
+        const value = getMetricValue(state.stats, def.metric);
+        if (value - dq.progress < def.goal) return false;
+        // выдаём награду
+        const newKeys = def.reward.keys
+          ? { ...state.keys, [def.reward.keys.rarity]: state.keys[def.reward.keys.rarity] + def.reward.keys.count }
+          : state.keys;
+        set({
+          keys: newKeys,
+          money: state.money + def.reward.money,
+          dailies: {
+            ...state.dailies,
+            quests: state.dailies.quests.map((q) =>
+              q.id === id ? { ...q, claimed: true } : q,
+            ),
+          },
+          lastNotice: {
+            id: `daily-${id}-${Date.now()}`,
+            text: `Дейлик: ${def.description} выполнен!`,
+            color: "#22c55e",
+            emoji: def.emoji,
+          },
+        });
+        return true;
+      },
+
+      resetDailiesIfNewDay: () => {
+        const state = get();
+        const today = todayStr();
+        if (state.dailies.date !== today) {
+          // обновляем дейлики: свежие 3 квеста, progress = baseline текущей метрики
+          const newQuests = rollDailyQuests().map((q) => {
+            const def = DAILY_POOL.find((d) => d.id === q.id);
+            if (!def) return q;
+            return { ...q, progress: getMetricValue(state.stats, def.metric) };
+          });
+          set({ dailies: { date: today, quests: newQuests } });
+        }
+      },
+
+      clearLastNotice: () => set({ lastNotice: null }),
 
       // ========== АВТО-БОЙ ==========
 
@@ -738,7 +1067,46 @@ export const useGameStore = create<GameState>()(
 
         const heroStats = state.computeHeroStats();
         const enemy = state.battle.currentEnemy;
-        const newHp = enemy.hp - heroStats.attack;
+
+        // ===== Навыки героя =====
+        // случайным образом активируется один из открытых навыков
+        let damage = heroStats.attack;
+        let moneyMult = 1;
+        let keyChanceMult = 1;
+        let instantKill = false;
+        let activeSkill: { emoji: string; name: string; color: string } | null = null;
+        for (const skill of HERO_SKILLS) {
+          if (state.battle.heroLevel < skill.unlockLevel) continue;
+          if (Math.random() < skill.triggerChance) {
+            if (skill.id === "power_strike") {
+              damage = Math.round(damage * skill.effectMult);
+              activeSkill = { emoji: skill.emoji, name: skill.name, color: skill.color };
+              break;
+            } else if (skill.id === "vampirism") {
+              moneyMult = skill.effectMult;
+              activeSkill = { emoji: skill.emoji, name: skill.name, color: skill.color };
+              break;
+            } else if (skill.id === "critical") {
+              damage = Math.round(damage * skill.effectMult);
+              activeSkill = { emoji: skill.emoji, name: skill.name, color: skill.color };
+              break;
+            } else if (skill.id === "chain_lightning") {
+              // мгновенное убийство только если HP врага < 30%
+              if (enemy.hp / enemy.maxHp < 0.3) {
+                instantKill = true;
+                activeSkill = { emoji: skill.emoji, name: skill.name, color: skill.color };
+                break;
+              }
+            } else if (skill.id === "mass_attack") {
+              damage = Math.round(damage * skill.effectMult);
+              keyChanceMult = 2;
+              activeSkill = { emoji: skill.emoji, name: skill.name, color: skill.color };
+              break;
+            }
+          }
+        }
+
+        const newHp = instantKill ? 0 : enemy.hp - damage;
 
         if (newHp > 0) {
           // враг выжил — просто уменьшаем hp
@@ -752,16 +1120,17 @@ export const useGameStore = create<GameState>()(
           return;
         }
 
-        // враг убит — расчёт наград с учётом элиты/босса
+        // враг убит — расчёт наград с учётом элиты/босса/этажа
         const enemyType = ENEMY_TYPES.find((e) => e.id === enemy.typeId)!;
-        const rewardMult = enemy.isBoss ? BOSS_REWARD_MULT : enemy.isElite ? ELITE_REWARD_MULT : 1;
-        const xpGain = enemyType.xpReward * rewardMult;
-        const moneyGain = randInt(enemyType.moneyReward[0], enemyType.moneyReward[1]) * rewardMult;
-        // шанс ключа: для босса — BOSS_KEY_DROP_CHANCE, для элиты — 2x базовый, иначе базовый
+        const enemyMult = enemy.isBoss ? BOSS_REWARD_MULT : enemy.isElite ? ELITE_REWARD_MULT : 1;
+        const floor = getCurrentFloor(state.battle.enemiesKilled);
+        const fMult = floorRewardMult(floor);
+        const xpGain = Math.round(enemyType.xpReward * enemyMult * fMult);
+        const moneyGain = Math.round(randInt(enemyType.moneyReward[0], enemyType.moneyReward[1]) * enemyMult * fMult * moneyMult);
+        // шанс ключа: босс 50%, элита 2x базовый, иначе базовый
         const baseKeyChance = enemyType.keyDropChance;
-        const keyChance = enemy.isBoss ? BOSS_KEY_DROP_CHANCE : enemy.isElite ? baseKeyChance * 2 : baseKeyChance;
+        const keyChance = (enemy.isBoss ? BOSS_KEY_DROP_CHANCE : enemy.isElite ? baseKeyChance * 2 : baseKeyChance) * keyChanceMult;
         const keyDrop = Math.random() < keyChance;
-        // тип выпавшего ключа: босс — серебряный, элита — бронзовый, обычный — ржавый
         const keyRarity: KeyRarity = enemy.isBoss ? "silver" : enemy.isElite ? "bronze" : "rusty";
 
         // leveling
@@ -781,6 +1150,8 @@ export const useGameStore = create<GameState>()(
           : state.keys;
 
         const newEnemiesKilled = state.battle.enemiesKilled + 1;
+        const newBossKills = state.stats.bossKills + (enemy.isBoss ? 1 : 0);
+        const newEliteKills = state.stats.eliteKills + (enemy.isElite ? 1 : 0);
 
         set({
           keys: newKeys,
@@ -805,7 +1176,17 @@ export const useGameStore = create<GameState>()(
             enemiesKilled: newEnemiesKilled,
             heroLevel: level,
             moneyEarned: state.stats.moneyEarned + moneyGain,
+            bossKills: newBossKills,
+            eliteKills: newEliteKills,
           },
+          lastNotice: activeSkill
+            ? {
+                id: `skill-${now}`,
+                text: `${activeSkill.emoji} ${activeSkill.name}!`,
+                color: activeSkill.color,
+                emoji: activeSkill.emoji,
+              }
+            : state.lastNotice,
         });
         void leveled;
       },
@@ -829,6 +1210,9 @@ export const useGameStore = create<GameState>()(
             lastReward: null,
           },
           lastDrop: null,
+          lastNotice: null,
+          achievements: {},
+          dailies: { date: todayStr(), quests: rollDailyQuests() },
           stats: {
             totalClicks: 0,
             chestsOpened: 0,
@@ -837,11 +1221,13 @@ export const useGameStore = create<GameState>()(
             bestRarityFound: null,
             enemiesKilled: 0,
             heroLevel: 1,
+            bossKills: 0,
+            eliteKills: 0,
           },
         }),
     }),
     {
-      name: "chest-thief-game-v2",
+      name: "chest-thief-game-v3",
       partialize: (s) => ({
         keys: s.keys,
         money: s.money,
@@ -851,9 +1237,12 @@ export const useGameStore = create<GameState>()(
         equipped: s.equipped,
         battle: s.battle,
         stats: s.stats,
+        achievements: s.achievements,
+        dailies: s.dailies,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();
+        state?.resetDailiesIfNewDay();
       },
     },
   ),

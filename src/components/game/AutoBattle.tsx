@@ -8,6 +8,7 @@ import {
   ATTACK_INTERVAL_MIN_MS,
   ENEMY_TYPES,
   HERO_BASE,
+  HERO_SKILLS,
   type ItemStats,
 } from "@/lib/game/config";
 
@@ -381,6 +382,9 @@ export default function AutoBattle() {
           </div>
         </div>
 
+        {/* Навыки героя — открываются с ростом уровня */}
+        <SkillsList heroLevel={battle.heroLevel} />
+
         {/* Последняя награда */}
         <AnimatePresence>
           {battle.lastReward && (
@@ -416,6 +420,53 @@ export default function AutoBattle() {
           animation: screenShake 0.45s ease-in-out;
         }
       `}</style>
+    </div>
+  );
+}
+
+// Список навыков героя с замком для заблокированных
+function SkillsList({ heroLevel }: { heroLevel: number }) {
+  return (
+    <div>
+      <div className="text-[9px] uppercase tracking-wider text-zinc-500 font-mono mb-1">
+        Навыки
+      </div>
+      <div className="grid grid-cols-5 gap-1">
+        {HERO_SKILLS.map((skill) => {
+          const unlocked = heroLevel >= skill.unlockLevel;
+          return (
+            <div
+              key={skill.id}
+              className="relative rounded-md p-1.5 text-center transition-all"
+              style={{
+                background: unlocked ? skill.color + "1a" : "rgba(0,0,0,0.4)",
+                border: `1px solid ${unlocked ? skill.color + "88" : "#27272a"}`,
+                opacity: unlocked ? 1 : 0.5,
+                boxShadow: unlocked ? `0 0 8px ${skill.color}44` : "none",
+              }}
+              title={`${skill.name} — ${skill.description}${unlocked ? "" : ` (откроется на ур. ${skill.unlockLevel})`}`}
+            >
+              <div className="text-base leading-none">{unlocked ? skill.emoji : "🔒"}</div>
+              <div
+                className="text-[8px] font-mono leading-tight mt-0.5"
+                style={{ color: unlocked ? skill.color : "#64748b" }}
+              >
+                {skill.name.split(" ")[0]}
+              </div>
+              {!unlocked && (
+                <div className="text-[7px] text-zinc-600 font-mono leading-none mt-0.5">
+                  ур.{skill.unlockLevel}
+                </div>
+              )}
+              {unlocked && (
+                <div className="text-[7px] text-zinc-500 font-mono leading-none mt-0.5">
+                  {Math.round(skill.triggerChance * 100)}%
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

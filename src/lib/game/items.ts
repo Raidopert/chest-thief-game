@@ -4,6 +4,7 @@
 
 import {
   RARITIES,
+  SET_BY_ITEM_KIND,
   type EquipSlotId,
   type ItemStats,
   type LootItem,
@@ -206,6 +207,8 @@ function buildItems(): LootItem[] {
       const value = randInt(rng, rarity.valueMin, rarity.valueMax);
       const slot = slotForKind(base.kind);
       const stats = statsForKind(base.kind, mult);
+      // сет по типу базы (null для consumable/material)
+      const set = slot === null ? null : (SET_BY_ITEM_KIND[base.kind] ?? null);
 
       items.push({
         id: `${rarity.id}-${created}`,
@@ -215,6 +218,7 @@ function buildItems(): LootItem[] {
         baseValue: value,
         slot,
         stats,
+        set,
       });
       created++;
     }
@@ -228,6 +232,7 @@ function buildItems(): LootItem[] {
       const value = randInt(rng, rarity.valueMin, rarity.valueMax);
       const slot = slotForKind(base.kind);
       const stats = statsForKind(base.kind, mult);
+      const set = slot === null ? null : (SET_BY_ITEM_KIND[base.kind] ?? null);
       items.push({
         id: `${rarity.id}-${created}`,
         name,
@@ -236,6 +241,7 @@ function buildItems(): LootItem[] {
         baseValue: value,
         slot,
         stats,
+        set,
       });
       created++;
       filler++;

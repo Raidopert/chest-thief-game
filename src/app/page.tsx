@@ -11,10 +11,19 @@ import LootReveal from "@/components/game/LootReveal";
 import HeroInventory from "@/components/game/HeroInventory";
 import AutoBattle from "@/components/game/AutoBattle";
 import GameTabs from "@/components/game/GameTabs";
-import { SPAWN_INTERVAL_MS } from "@/lib/game/config";
+import QuestsModal from "@/components/game/QuestsModal";
+import AltarModal from "@/components/game/AltarModal";
+import NoticeToast from "@/components/game/NoticeToast";
+import {
+  DUNGEON_KILLS_PER_FLOOR,
+  DUNGEON_NAMES,
+  SPAWN_INTERVAL_MS,
+} from "@/lib/game/config";
 
 export default function Home() {
   const [shopOpen, setShopOpen] = useState(false);
+  const [questsOpen, setQuestsOpen] = useState(false);
+  const [altarOpen, setAltarOpen] = useState(false);
   const hydrated = useGameStore((s) => s.hydrated);
   const totalClicks = useGameStore((s) => s.stats.totalClicks);
   const chestsOpened = useGameStore((s) => s.stats.chestsOpened);
@@ -23,6 +32,8 @@ export default function Home() {
   const bestRarityFound = useGameStore((s) => s.stats.bestRarityFound);
   const enemiesKilled = useGameStore((s) => s.battle.enemiesKilled);
   const heroLevel = useGameStore((s) => s.battle.heroLevel);
+  const bossKills = useGameStore((s) => s.stats.bossKills);
+  const eliteKills = useGameStore((s) => s.stats.eliteKills);
   const resetGame = useGameStore((s) => s.resetGame);
 
   // Селекторы для циклов (получаем функции один раз)
@@ -30,27 +41,31 @@ export default function Home() {
   const pruneChests = useGameStore((s) => s.pruneChests);
   const battleTick = useGameStore((s) => s.battleTick);
   const clearLuckIfExpired = useGameStore((s) => s.clearLuckIfExpired);
+  const resetDailiesIfNewDay = useGameStore((s) => s.resetDailiesIfNewDay);
 
   // Главные игровые циклы — работают ВСЕГДА, независимо от активной вкладки.
-  // Только так спавн сундуков и авто-бой идут в фоне, пока игрок на другой вкладке.
   useEffect(() => {
     const spawn = setInterval(() => spawnChestTick(), SPAWN_INTERVAL_MS);
     const prune = setInterval(() => pruneChests(Date.now()), 800);
     const battle = setInterval(() => battleTick(Date.now()), 100);
     const luck = setInterval(() => clearLuckIfExpired(Date.now()), 1000);
+    const dailyCheck = setInterval(() => resetDailiesIfNewDay(), 60_000);
     // стартовый спавн
     spawnChestTick();
     const t1 = setTimeout(() => spawnChestTick(), 500);
     const t2 = setTimeout(() => spawnChestTick(), 1200);
+    // проверка нового дня при старте
+    resetDailiesIfNewDay();
     return () => {
       clearInterval(spawn);
       clearInterval(prune);
       clearInterval(battle);
       clearInterval(luck);
+      clearInterval(dailyCheck);
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [spawnChestTick, pruneChests, battleTick, clearLuckIfExpired]);
+  }, [spawnChestTick, pruneChests, battleTick, clearLuckIfExpired, resetDailiesIfNewDay]);
 
   // предотвращаем случайный зум на двойной тап (мобилки)
   useEffect(() => {
@@ -103,7 +118,14 @@ export default function Home() {
         </header>
 
         {/* Панель ресурсов — всегда видна над вкладками */}
-        <ResourceBar onOpenShop={() => setShopOpen(true)} />
+        <ResourceBar
+          onOpenShop={() => setShopOpen(true)}
+          onOpenQuests={() => setQuestsOpen(true)}
+          onOpenAltar={() => setAltarOpen(true)}
+        />
+
+        {/* Индикатор этажа подземелья */}
+        <FloorIndicator enemiesKilled={enemiesKilled} />
 
         {/* Вкладки */}
         <GameTabs
@@ -127,11 +149,13 @@ export default function Home() {
         />
 
         {/* Статистика */}
-        <footer className="rounded-2xl border border-zinc-700 bg-[#0f0d15]/80 p-3 grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
+        <footer className="rounded-2xl border border-zinc-700 bg-[#0f0d15]/80 p-3 grid grid-cols-4 md:grid-cols-8 gap-2 text-center">
           <Stat label="Кликов" value={totalClicks} />
           <Stat label="Сундуков" value={chestsOpened} />
           <Stat label="Лута" value={itemsFound} />
           <Stat label="Врагов" value={enemiesKilled} />
+          <Stat label="Боссов" value={bossKills} />
+          <Stat label="Элиты" value={eliteKills} />
           <Stat label="Уровень" value={heroLevel} />
           <Stat
             label="Лучшая редкость"
@@ -146,7 +170,43 @@ export default function Home() {
       </main>
 
       <Shop open={shopOpen} onClose={() => setShopOpen(false)} />
+      <QuestsModal open={questsOpen} onClose={() => setQuestsOpen(false)} />
+      <AltarModal open={altarOpen} onClose={() => setAltarOpen(false)} />
       <LootReveal />
+      <NoticeToast />
+    </div>
+  );
+}
+
+function FloorIndicator({ enemiesKilled }: { enemiesKilled: number }) {
+  const floor = Math.floor(enemiesKilled / DUNGEON_KILLS_PER_FLOOR) + 1;
+  const progressInFloor = enemiesKilled % DUNGEON_KILLS_PER_FLOOR;
+  const pct = (progressInFloor / DUNGEON_KILLS_PER_FLOOR) * 100;
+  const name = DUNGEON_NAMES[Math.min(floor - 1, DUNGEON_NAMES.length - 1)];
+  return (
+    <div className="rounded-2xl border border-purple-900/40 bg-gradient-to-r from-purple-950/40 to-[#0f0d15] p-2.5 flex items-center gap-3">
+      <div className="flex flex-col items-center min-w-[60px]">
+        <div className="text-[9px] uppercase tracking-widest text-purple-400/80 font-mono">
+          Этаж
+        </div>
+        <div className="text-purple-200 font-black text-xl font-mono leading-none">
+          {floor}
+        </div>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[11px] text-zinc-300 font-bold truncate">
+          {name}
+        </div>
+        <div className="mt-1 h-1.5 bg-black/60 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-purple-700 to-purple-400 transition-all"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <div className="text-[9px] text-zinc-500 font-mono mt-0.5">
+          {progressInFloor}/{DUNGEON_KILLS_PER_FLOOR} до следующего этажа · ×{(Math.pow(1.5, floor - 1)).toFixed(2)} HP врагов
+        </div>
+      </div>
     </div>
   );
 }

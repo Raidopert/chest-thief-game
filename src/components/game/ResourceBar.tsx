@@ -6,9 +6,11 @@ import { KEY_TYPES, RARITIES } from "@/lib/game/config";
 
 interface Props {
   onOpenShop: () => void;
+  onOpenQuests: () => void;
+  onOpenAltar: () => void;
 }
 
-export default function ResourceBar({ onOpenShop }: Props) {
+export default function ResourceBar({ onOpenShop, onOpenQuests, onOpenAltar }: Props) {
   const keys = useGameStore((s) => s.keys);
   const money = useGameStore((s) => s.money);
   const selectedKey = useGameStore((s) => s.selectedKey);
@@ -65,13 +67,29 @@ export default function ResourceBar({ onOpenShop }: Props) {
           </div>
         </div>
 
-        {/* Кнопка магазина */}
-        <button
-          onClick={onOpenShop}
-          className="px-4 py-2 rounded-xl bg-gradient-to-b from-red-800 to-red-950 text-zinc-200 font-bold text-sm hover:from-red-700 hover:to-red-900 transition-colors border border-red-700/50 shadow-md"
-        >
-          🛒 Магазин
-        </button>
+        {/* Кнопки магазина, заданий и алтаря */}
+        <div className="flex gap-1.5">
+          <button
+            onClick={onOpenQuests}
+            className="px-3 py-2 rounded-xl bg-gradient-to-b from-amber-800 to-amber-950 text-amber-200 font-bold text-sm hover:from-amber-700 hover:to-amber-900 transition-colors border border-amber-700/50 shadow-md"
+            title="Достижения и дейлики"
+          >
+            📜
+          </button>
+          <button
+            onClick={onOpenAltar}
+            className="px-3 py-2 rounded-xl bg-gradient-to-b from-purple-800 to-purple-950 text-purple-200 font-bold text-sm hover:from-purple-700 hover:to-purple-900 transition-colors border border-purple-700/50 shadow-md"
+            title="Крафт и жертва"
+          >
+            🏛
+          </button>
+          <button
+            onClick={onOpenShop}
+            className="px-4 py-2 rounded-xl bg-gradient-to-b from-red-800 to-red-950 text-zinc-200 font-bold text-sm hover:from-red-700 hover:to-red-900 transition-colors border border-red-700/50 shadow-md"
+          >
+            🛒 Магазин
+          </button>
+        </div>
       </div>
 
       {/* Выбор ключа */}

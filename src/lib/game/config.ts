@@ -260,6 +260,8 @@ export interface LootItem {
   // Категория для надевания: null = нельзя надеть (зелья, материалы, драгоценности)
   slot: EquipSlotId | null;
   stats: ItemStats;
+  // Сет экипировки (для bonus 2/4/6)
+  set: string | null;
 }
 
 // Стэк в инвентаре
@@ -273,6 +275,20 @@ export interface InventoryStack {
   count: number;
   slot: EquipSlotId | null;
   stats: ItemStats;
+  set: string | null;
+}
+
+// Надетый предмет (один экземпляр, не стэк) — для equipped
+export interface EquippedItemData {
+  uid: string;
+  itemId: string;
+  name: string;
+  rarity: RarityId;
+  emoji: string;
+  baseValue: number;
+  stats: ItemStats;
+  slot: EquipSlotId | null;
+  set: string | null;
 }
 
 export interface LuckBoost {
@@ -530,6 +546,247 @@ export const RARITY_STAT_MULT: Record<RarityId, number> = {
   mythic: 65,
   divine: 150,
 };
+
+// ============================================================================
+// СЕТЫ ЭКИПИРОВКИ
+// ============================================================================
+export interface EquipSet {
+  id: string;
+  name: string;
+  color: string;
+  // бонусы за 2/4/6 предметов одного сета
+  bonus2: { stat: keyof ItemStats; mult: number };
+  bonus4: { stat: keyof ItemStats; mult: number };
+  bonus6?: { stat: keyof ItemStats; mult: number };
+}
+
+export const EQUIP_SETS: EquipSet[] = [
+  {
+    id: "dragon",
+    name: "Драконий",
+    color: "#dc2626",
+    bonus2: { stat: "attack", mult: 0.15 },
+    bonus4: { stat: "attack", mult: 0.35 },
+    bonus6: { stat: "attack", mult: 0.7 },
+  },
+  {
+    id: "shadow",
+    name: "Теневой",
+    color: "#7c3aed",
+    bonus2: { stat: "luck", mult: 0.2 },
+    bonus4: { stat: "luck", mult: 0.5 },
+    bonus6: { stat: "luck", mult: 1.0 },
+  },
+  {
+    id: "light",
+    name: "Ангельский",
+    color: "#fbbf24",
+    bonus2: { stat: "defense", mult: 0.2 },
+    bonus4: { stat: "defense", mult: 0.5 },
+    bonus6: { stat: "defense", mult: 1.0 },
+  },
+  {
+    id: "plague",
+    name: "Чумной",
+    color: "#84cc16",
+    bonus2: { stat: "speed", mult: 0.2 },
+    bonus4: { stat: "speed", mult: 0.5 },
+    bonus6: { stat: "speed", mult: 1.0 },
+  },
+  {
+    id: "iron",
+    name: "Железный",
+    color: "#a1a1aa",
+    bonus2: { stat: "defense", mult: 0.15 },
+    bonus4: { stat: "defense", mult: 0.35 },
+  },
+  {
+    id: "rogue",
+    name: "Воровской",
+    color: "#f97316",
+    bonus2: { stat: "luck", mult: 0.15 },
+    bonus4: { stat: "luck", mult: 0.35 },
+  },
+  {
+    id: "mage",
+    name: "Магический",
+    color: "#3b82f6",
+    bonus2: { stat: "attack", mult: 0.12 },
+    bonus4: { stat: "luck", mult: 0.3 },
+  },
+  {
+    id: "royal",
+    name: "Королевский",
+    color: "#a855f7",
+    bonus2: { stat: "attack", mult: 0.1 },
+    bonus4: { stat: "defense", mult: 0.25 },
+  },
+];
+
+export const SET_BY_ID: Record<string, EquipSet> = EQUIP_SETS.reduce(
+  (acc, s) => { acc[s.id] = s; return acc; },
+  {} as Record<string, EquipSet>,
+);
+
+// Присваиваем слотам базовые сеты (по типу предмета)
+export const SET_BY_ITEM_KIND: Record<string, string> = {
+  weapon:        "dragon",
+  shield:        "iron",
+  armor_head:    "royal",
+  armor_body:    "light",
+  armor_waist:   "rogue",
+  armor_feet:    "plague",
+  amulet:        "mage",
+  artifact:      "shadow", // артефакты по умолчанию
+};
+
+// ============================================================================
+// НАВЫКИ ГЕРОЯ
+// ============================================================================
+export interface HeroSkill {
+  id: string;
+  name: string;
+  description: string;
+  unlockLevel: number;
+  // множитель эффекта при активации
+  effectMult: number;
+  // шанс активации (0..1)
+  triggerChance: number;
+  color: string;
+  emoji: string;
+}
+
+export const HERO_SKILLS: HeroSkill[] = [
+  {
+    id: "power_strike",
+    name: "Мощный удар",
+    description: "+50% к урону следующего удара",
+    unlockLevel: 5,
+    effectMult: 1.5,
+    triggerChance: 0.15,
+    color: "#dc2626",
+    emoji: "💥",
+  },
+  {
+    id: "vampirism",
+    name: "Вампиризм",
+    description: "+50% монет при убийстве",
+    unlockLevel: 10,
+    effectMult: 1.5,
+    triggerChance: 0.12,
+    color: "#7f1d1d",
+    emoji: "🩸",
+  },
+  {
+    id: "critical",
+    name: "Критический удар",
+    description: "×3 урон следующего удара",
+    unlockLevel: 15,
+    effectMult: 3,
+    triggerChance: 0.1,
+    color: "#fbbf24",
+    emoji: "⚡",
+  },
+  {
+    id: "chain_lightning",
+    name: "Цепная молния",
+    description: "Мгновенное убийство (если HP < 30%)",
+    unlockLevel: 20,
+    effectMult: 999,
+    triggerChance: 0.08,
+    color: "#67e8f9",
+    emoji: "🌩",
+  },
+  {
+    id: "mass_attack",
+    name: "Массовая атака",
+    description: "×2 урон + удвоенный шанс ключа",
+    unlockLevel: 25,
+    effectMult: 2,
+    triggerChance: 0.1,
+    color: "#a855f7",
+    emoji: "⚔",
+  },
+];
+
+// ============================================================================
+// ПОДЗЕМЕЛЬЯ / ЭТАЖИ
+// ============================================================================
+export const DUNGEON_KILLS_PER_FLOOR = 50;
+export const DUNGEON_HP_MULT_PER_FLOOR = 1.5;
+export const DUNGEON_REWARD_MULT_PER_FLOOR = 1.4;
+export const DUNGEON_NAMES: string[] = [
+  "Склеп Тьмы",
+  "Костница",
+  "Чумной Корпус",
+  "Катакомбы",
+  "Адит Инквизиции",
+  "Логово Демона",
+  "Проклятый Саркофаг",
+  "Сердце Бездны",
+  "Трон Крови",
+  "Бездна Забвения",
+];
+
+// ============================================================================
+// ДОСТИЖЕНИЯ / ДЕЙЛИКИ
+// ============================================================================
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  goal: number;
+  metric: "clicks" | "chestsOpened" | "itemsFound" | "enemiesKilled" | "heroLevel" | "bossKills" | "eliteKills" | "moneyEarned";
+  reward: { money: number; keys?: { rarity: KeyRarity; count: number } };
+  emoji: string;
+}
+
+export const ACHIEVEMENTS: Achievement[] = [
+  { id: "click_10",      name: "Палец-Воин",        description: "10 кликов по воришке",       goal: 10,      metric: "clicks",        reward: { money: 50 }, emoji: "👆" },
+  { id: "click_100",     name: "Молотильщик",       description: "100 кликов",                  goal: 100,     metric: "clicks",        reward: { money: 200, keys: { rarity: "iron", count: 1 } }, emoji: "🔨" },
+  { id: "click_1000",    name: "Несчётный",          description: "1000 кликов",                 goal: 1000,    metric: "clicks",        reward: { money: 1000, keys: { rarity: "bronze", count: 1 } }, emoji: "🌀" },
+  { id: "chests_5",      name: "Искатель",          description: "Открой 5 сундуков",           goal: 5,       metric: "chestsOpened",  reward: { money: 100 }, emoji: "📦" },
+  { id: "chests_25",     name: "Кладоискатель",     description: "Открой 25 сундуков",          goal: 25,      metric: "chestsOpened",  reward: { money: 500, keys: { rarity: "iron", count: 2 } }, emoji: "🗝" },
+  { id: "chests_100",    name: "Сундук-Лорд",       description: "Открой 100 сундуков",         goal: 100,     metric: "chestsOpened",  reward: { money: 3000, keys: { rarity: "silver", count: 1 } }, emoji: "👑" },
+  { id: "enemy_10",      name: "Палач",             description: "Убей 10 врагов",              goal: 10,      metric: "enemiesKilled", reward: { money: 80 }, emoji: "⚔" },
+  { id: "enemy_100",     name: "Лютый",              description: "Убей 100 врагов",             goal: 100,     metric: "enemiesKilled", reward: { money: 800, keys: { rarity: "iron", count: 2 } }, emoji: "💀" },
+  { id: "enemy_500",     name: "Истребитель",        description: "Убей 500 врагов",             goal: 500,     metric: "enemiesKilled", reward: { money: 5000, keys: { rarity: "silver", count: 1 } }, emoji: "☠" },
+  { id: "level_5",       name: "Стажёр",            description: "Достигни уровня 5",           goal: 5,       metric: "heroLevel",     reward: { money: 200 }, emoji: "📈" },
+  { id: "level_10",      name: "Ветеран",           description: "Достигни уровня 10",          goal: 10,      metric: "heroLevel",     reward: { money: 1000, keys: { rarity: "bronze", count: 1 } }, emoji: "🏆" },
+  { id: "level_20",      name: "Легенда",           description: "Достигни уровня 20",          goal: 20,      metric: "heroLevel",     reward: { money: 5000, keys: { rarity: "silver", count: 1 } }, emoji: "🌟" },
+  { id: "boss_1",        name: "Покоритель Боссов", description: "Убей первого босса",          goal: 1,       metric: "bossKills",     reward: { money: 500, keys: { rarity: "bronze", count: 1 } }, emoji: "👹" },
+  { id: "boss_5",        name: "Убийца Громил",     description: "Убей 5 боссов",               goal: 5,       metric: "bossKills",     reward: { money: 3000, keys: { rarity: "silver", count: 1 } }, emoji: "🗡" },
+  { id: "elite_5",       name: "Охотник на Элиту",  description: "Убей 5 элитных врагов",       goal: 5,       metric: "eliteKills",    reward: { money: 800, keys: { rarity: "bronze", count: 1 } }, emoji: "★" },
+  { id: "money_1000",    name: "Накопитель",        description: "Заработай 1000💰",            goal: 1000,    metric: "moneyEarned",   reward: { money: 500 }, emoji: "💰" },
+];
+
+export interface DailyQuest {
+  id: string;
+  description: string;
+  goal: number;
+  metric: "clicks" | "chestsOpened" | "enemiesKilled" | "itemsFound" | "moneyEarned";
+  reward: { money: number; keys?: { rarity: KeyRarity; count: number } };
+  emoji: string;
+}
+
+export const DAILY_POOL: DailyQuest[] = [
+  { id: "d_click_50",    description: "Кликни 50 раз по воришке",  goal: 50,    metric: "clicks",        reward: { money: 200, keys: { rarity: "iron", count: 1 } }, emoji: "👆" },
+  { id: "d_click_200",   description: "Кликни 200 раз",            goal: 200,   metric: "clicks",        reward: { money: 600, keys: { rarity: "iron", count: 2 } }, emoji: "🔥" },
+  { id: "d_chests_5",    description: "Открой 5 сундуков",         goal: 5,     metric: "chestsOpened",  reward: { money: 300, keys: { rarity: "iron", count: 1 } }, emoji: "📦" },
+  { id: "d_chests_15",   description: "Открой 15 сундуков",        goal: 15,    metric: "chestsOpened",  reward: { money: 800, keys: { rarity: "bronze", count: 1 } }, emoji: "🗝" },
+  { id: "d_enemy_20",    description: "Убей 20 врагов",            goal: 20,    metric: "enemiesKilled", reward: { money: 300, keys: { rarity: "iron", count: 1 } }, emoji: "⚔" },
+  { id: "d_enemy_50",    description: "Убей 50 врагов",            goal: 50,    metric: "enemiesKilled", reward: { money: 700, keys: { rarity: "bronze", count: 1 } }, emoji: "💀" },
+  { id: "d_money_500",   description: "Заработай 500💰 за день",   goal: 500,   metric: "moneyEarned",   reward: { money: 300, keys: { rarity: "iron", count: 1 } }, emoji: "💰" },
+  { id: "d_items_10",    description: "Найди 10 предметов лута",  goal: 10,    metric: "itemsFound",    reward: { money: 250, keys: { rarity: "iron", count: 1 } }, emoji: "🎒" },
+];
+
+// ============================================================================
+// КРАФТ / АЛТАРЬ ЖЕРТВЫ
+// ============================================================================
+export const CRAFT_REQUIRED = 5; // 5 одинаковых → 1 следующей редкости
+export const SACRIFICE_LUCK_PER_ITEM = 0.005; // 0.5% за каждый пожертвованный предмет
+
+
 
 // ============================================================================
 // ГОТИЧЕСКАЯ UI-ПАЛИТРА (Dark Fantasy — Diablo/Bloodborne)

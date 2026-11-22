@@ -7,6 +7,7 @@ import {
   EQUIP_SLOTS,
   HERO_BASE,
   RARITY_BY_ID,
+  SET_BY_ID,
   type EquipSlotId,
   type InventoryStack,
   type ItemStats,
@@ -85,6 +86,9 @@ export default function HeroInventory({ onPickItemForSlot }: Props) {
         <Stat label="Скорость" value={heroStats.speed} color="#22c55e" />
         <Stat label="Удача" value={heroStats.luck} color="#fbbf24" />
       </div>
+
+      {/* Активные сеты экипировки */}
+      <ActiveSets />
 
       {/* Силуэт + ячейки */}
       <div
@@ -250,6 +254,81 @@ function Stat({ label, value, color }: { label: string; value: number; color: st
       <div className="text-sm font-bold font-mono leading-tight" style={{ color }}>
         {value}
       </div>
+    </div>
+  );
+}
+
+// Показывает активные сеты экипировки героя и их бонусы
+function ActiveSets() {
+  const equipped = useGameStore((s) => s.equipped);
+
+  // считаем количество предметов каждого сета
+  const setCounts: Record<string, number> = {};
+  for (const key of Object.keys(equipped) as EquipSlotId[]) {
+    const item = equipped[key];
+    if (item?.set) setCounts[item.set] = (setCounts[item.set] ?? 0) + 1;
+  }
+  const active = Object.keys(setCounts).map((setId) => {
+    const def = SET_BY_ID[setId];
+    const count = setCounts[setId];
+    return { setId, def, count };
+  }).filter((s) => s.def);
+
+  if (active.length === 0) return null;
+
+  return (
+    <div className="mb-3 space-y-1">
+      <div className="text-[9px] uppercase tracking-wider text-zinc-500 font-mono mb-1">
+        Сеты
+      </div>
+      {active.map(({ setId, def, count }) => {
+        const has2 = count >= 2;
+        const has4 = count >= 4;
+        const has6 = count >= 6 && !!def.bonus6;
+        return (
+          <div
+            key={setId}
+            className="flex items-center gap-2 p-1.5 rounded-md"
+            style={{
+              background: def.color + "11",
+              border: `1px solid ${def.color}${has2 ? "66" : "22"}`,
+              boxShadow: has2 ? `0 0 8px ${def.color}33` : "none",
+            }}
+          >
+            <span
+              className="text-[10px] font-mono font-bold uppercase tracking-wider"
+              style={{ color: def.color }}
+            >
+              {def.name}
+            </span>
+            <span className="text-[10px] text-zinc-500 font-mono">
+              {count}/6
+            </span>
+            <div className="flex gap-1 ml-auto">
+              {[2, 4, 6].map((threshold) => {
+                const active2 = threshold === 2 ? has2 : threshold === 4 ? has4 : has6;
+                const bonus = threshold === 2 ? def.bonus2 : threshold === 4 ? def.bonus4 : def.bonus6;
+                if (!bonus) return null;
+                const statName = bonus.stat === "attack" ? "АТК" : bonus.stat === "defense" ? "ЗАЩ" : bonus.stat === "speed" ? "СКР" : "УДЧ";
+                return (
+                  <span
+                    key={threshold}
+                    className="text-[8px] px-1 py-0.5 rounded font-mono"
+                    style={{
+                      background: active2 ? def.color + "33" : "rgba(0,0,0,0.3)",
+                      color: active2 ? def.color : "#64748b",
+                      border: `1px solid ${def.color}${active2 ? "88" : "22"}`,
+                      opacity: active2 ? 1 : 0.5,
+                    }}
+                  >
+                    {threshold}шт:+{Math.round(bonus.mult * 100)}%{statName}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

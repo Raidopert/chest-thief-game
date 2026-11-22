@@ -1,0 +1,19 @@
+{
+  "name": "Сундучный Вор",
+  "short_name": "СундучВор",
+  "description": "Браузерная кликер-игра: души воришку луком, открывай сундуки, собирай 1000 предметов 7 редкостей.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0705",
+  "theme_color": "#1a1208",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

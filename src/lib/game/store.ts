@@ -310,22 +310,24 @@ export const useGameStore = create<GameState>()(
         const size = Math.round(randRange(visualDef.sizeRange[0], visualDef.sizeRange[1]));
 
         // Ищем позицию, не пересекающуюся с существующими сундуками.
-        // Позиции в % от 0..100. Минимальное расстояние между центрами
-        // зависит от размера поля — берём 18% по диагонали (достаточно для
-        // сундуков 70-130px на поле 400-800px).
-        const MIN_DIST_PERCENT = 18;
+        // Используем отдельные минимальные расстояния по X и Y в процентах,
+        // потому что поле шире чем выше (700x400px типично). Учитываем
+        // размер самого большого сундука (130px) с запасом.
+        const MIN_DIST_X = 26; // % по горизонтали
+        const MIN_DIST_Y = 32; // % по вертикали (поле короче)
         let chosenX = 0;
         let chosenY = 0;
         let foundValid = false;
-        for (let attempt = 0; attempt < 15; attempt++) {
+        const activeChests = state.chests.filter((c) => !c.opened);
+        for (let attempt = 0; attempt < 30; attempt++) {
           const x = randRange(10, 78);
           const y = randRange(14, 78);
           let ok = true;
-          for (const c of state.chests) {
-            const dx = c.x - x;
-            const dy = c.y - y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < MIN_DIST_PERCENT) {
+          for (const c of activeChests) {
+            const dx = Math.abs(c.x - x);
+            const dy = Math.abs(c.y - y);
+            // пересечение только если оба расстояния меньше минимальных
+            if (dx < MIN_DIST_X && dy < MIN_DIST_Y) {
               ok = false;
               break;
             }
@@ -336,13 +338,11 @@ export const useGameStore = create<GameState>()(
             foundValid = true;
             break;
           }
-          // запоминаем последнюю попытку как фолбэк
           chosenX = x;
           chosenY = y;
         }
-        // Если не нашли свободное место (редкий случай при почти полном поле)
-        // — не спавним, чтобы не наслаивать.
-        if (!foundValid && state.chests.length >= 4) return;
+        // Если не нашли свободное место — не спавним, чтобы не наслаивать.
+        if (!foundValid) return;
 
         const hiddenTier = randInt(1, CHEST_HIDDEN_TIERS);
         const fadeMs = Math.round(randRange(CHEST_FADE_MS_MIN, CHEST_FADE_MS_MAX));

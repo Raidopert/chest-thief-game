@@ -128,49 +128,49 @@ export default function Chest({ chest }: Props) {
       onPointerCancel={handleUp}
     >
       <div
-        className="relative w-full h-full rounded-xl cursor-pointer transition-transform"
+        className="relative w-full h-full rounded-xl cursor-pointer transition-transform overflow-hidden"
         style={{
-          background: `radial-gradient(circle at 30% 30%, ${visual.accent}44, ${visual.color})`,
           border: `2px solid ${visual.accent}`,
           boxShadow: canOpen
-            ? `0 0 18px ${visual.accent}99, inset 0 0 12px rgba(0,0,0,0.5)`
-            : `0 0 6px ${visual.accent}55, inset 0 0 12px rgba(0,0,0,0.5)`,
+            ? `0 0 22px ${visual.accent}cc, 0 0 8px ${visual.accent}99, 0 4px 12px rgba(0,0,0,0.7)`
+            : `0 0 8px ${visual.accent}66, 0 4px 8px rgba(0,0,0,0.6)`,
+          animation: canOpen ? "chestPulse 1.6s ease-in-out infinite" : "none",
         }}
       >
-        {/* крышка сундука */}
+        {/* AI-картинка сундука с CSS-фильтром для вариации цвета */}
         <div
-          className="absolute left-0 right-0 top-0 h-[45%] rounded-t-xl"
+          className="absolute inset-0"
           style={{
-            background: `linear-gradient(180deg, ${visual.accent}, ${visual.color})`,
-            borderBottom: `2px solid ${visual.accent}`,
+            backgroundImage: `url('${visual.image}')`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            filter: visual.filter,
           }}
         />
-        {/* замок */}
+        {/* затемнение по краям для объёма */}
         <div
-          className="absolute left-1/2 top-[35%] -translate-x-1/2 w-[22%] h-[22%] rounded-md"
+          className="absolute inset-0 pointer-events-none rounded-xl"
           style={{
-            background: chest.openingBy ? key.color : "#fbbf24",
-            boxShadow: `0 0 6px ${chest.openingBy ? key.color : "#fbbf24"}aa`,
+            background: `radial-gradient(circle at 50% 35%, transparent 50%, rgba(0,0,0,0.5) 100%)`,
           }}
         />
-        {/* обрамление по углам */}
-        {[
-          { x: 0, y: 0 },
-          { x: 100, y: 0 },
-          { x: 0, y: 100 },
-          { x: 100, y: 100 },
-        ].map((p, i) => (
-          <div
-            key={i}
-            className="absolute w-2 h-2 rounded-full"
-            style={{
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              transform: "translate(-50%, -50%)",
-              background: visual.accent,
-            }}
-          />
-        ))}
+        {/* цветовой оверлей для интеграции с темой сундука */}
+        <div
+          className="absolute inset-0 pointer-events-none mix-blend-overlay"
+          style={{
+            background: `linear-gradient(135deg, ${visual.color}99, transparent 50%, ${visual.accent}66)`,
+          }}
+        />
+
+        {/* замок-глаз поверх картинки (индикатор активности) */}
+        <div
+          className="absolute left-1/2 top-[35%] -translate-x-1/2 w-[14%] h-[14%] rounded-full pointer-events-none"
+          style={{
+            background: chest.openingBy ? key.color : `${visual.accent}aa`,
+            boxShadow: `0 0 8px ${chest.openingBy ? key.color : visual.accent}`,
+            opacity: chest.openingBy ? 1 : 0.7,
+          }}
+        />
 
         {/* прогресс удержания */}
         {chest.openingBy && !chest.opened && (
@@ -184,7 +184,7 @@ export default function Chest({ chest }: Props) {
                 cy="50"
                 r="46"
                 fill="none"
-                stroke="rgba(0,0,0,0.5)"
+                stroke="rgba(0,0,0,0.6)"
                 strokeWidth="4"
               />
               <circle
@@ -200,7 +200,7 @@ export default function Chest({ chest }: Props) {
               />
             </svg>
             <div
-              className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-mono px-1.5 py-0.5 rounded whitespace-nowrap"
+              className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-mono px-1.5 py-0.5 rounded whitespace-nowrap z-10"
               style={{ background: key.color, color: "#000" }}
             >
               {key.name}
@@ -210,17 +210,23 @@ export default function Chest({ chest }: Props) {
 
         {/* подсказка "не проявился" */}
         {!isFullyVisible && !chest.opened && (
-          <div className="absolute inset-0 flex items-center justify-center text-[9px] text-white/60 font-mono pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center text-[9px] text-white/70 font-mono pointer-events-none bg-black/40">
             проявляется...
           </div>
         )}
         {/* подсказка "нет ключей" */}
         {isFullyVisible && keysCount === 0 && !chest.opened && (
-          <div className="absolute inset-0 flex items-center justify-center text-[9px] text-red-300/80 font-mono pointer-events-none text-center px-1">
+          <div className="absolute inset-0 flex items-center justify-center text-[9px] text-red-300/90 font-mono pointer-events-none text-center px-1 bg-black/50">
             нет ключа
           </div>
         )}
       </div>
+      <style jsx>{`
+        @keyframes chestPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.04); }
+        }
+      `}</style>
     </motion.div>
   );
 }

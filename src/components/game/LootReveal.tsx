@@ -6,15 +6,15 @@ import { useGameStore } from "@/lib/game/store";
 import { RARITY_BY_ID } from "@/lib/game/config";
 
 // Анимация выскакивающего лута при открытии сундука.
-// lastDrop хранится в store; мы просто чистим его через 2.2 сек,
-// вызывая clearLastDrop (сеттер в колбэке таймера — допустимо правилом).
+// z-index = z-[60] — выше Shop (z-50) и выше сундуков, чтобы
+// табличка всегда была видна поверх всего интерфейса.
 export default function LootReveal() {
   const lastDrop = useGameStore((s) => s.lastDrop);
   const clearLastDrop = useGameStore((s) => s.clearLastDrop);
 
   useEffect(() => {
     if (!lastDrop) return;
-    const t = setTimeout(() => clearLastDrop(), 2200);
+    const t = setTimeout(() => clearLastDrop(), 3000);
     return () => clearTimeout(t);
   }, [lastDrop, clearLastDrop]);
 
@@ -23,7 +23,7 @@ export default function LootReveal() {
       {lastDrop && (
         <motion.div
           key={lastDrop.uid}
-          className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center"
+          className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -32,9 +32,9 @@ export default function LootReveal() {
           <motion.div
             className="relative rounded-2xl px-6 py-4 flex flex-col items-center gap-2"
             style={{
-              background: "rgba(15,10,5,0.92)",
+              background: "rgba(15,10,5,0.95)",
               border: `2px solid ${RARITY_BY_ID[lastDrop.rarity].color}`,
-              boxShadow: `0 0 60px ${RARITY_BY_ID[lastDrop.rarity].glow}, 0 0 20px ${RARITY_BY_ID[lastDrop.rarity].color}`,
+              boxShadow: `0 0 80px ${RARITY_BY_ID[lastDrop.rarity].glow}, 0 0 30px ${RARITY_BY_ID[lastDrop.rarity].color}, 0 8px 32px rgba(0,0,0,0.8)`,
             }}
             initial={{ scale: 0.3, y: 60, rotate: -8 }}
             animate={{ scale: [0.3, 1.15, 1], y: [60, 0, 0], rotate: [-8, 4, 0] }}
@@ -49,13 +49,13 @@ export default function LootReveal() {
             </div>
             <motion.div
               className="text-5xl"
-              style={{ filter: `drop-shadow(0 0 8px ${RARITY_BY_ID[lastDrop.rarity].color})` }}
+              style={{ filter: `drop-shadow(0 0 12px ${RARITY_BY_ID[lastDrop.rarity].color})` }}
               animate={{ scale: [1, 1.15, 1] }}
               transition={{ duration: 1.2, repeat: Infinity }}
             >
               {lastDrop.emoji}
             </motion.div>
-            <div className="text-zinc-200 font-bold text-sm text-center max-w-[220px]">
+            <div className="text-zinc-200 font-bold text-sm text-center max-w-[240px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
               {lastDrop.name}
             </div>
             <div

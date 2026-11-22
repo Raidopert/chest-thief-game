@@ -74,7 +74,7 @@ export default function Shop({ open, onClose }: Props) {
                         {k.name}
                       </div>
                       <div className="text-[10px] text-zinc-400 font-mono">
-                        качество +{Math.round(k.qualityBoost * 100)}% · удержание {k.holdTimeMs}мс
+                        шанс редкого лута +{Math.round(k.qualityBoost * 100)}%
                       </div>
                     </div>
                     <button
@@ -93,7 +93,7 @@ export default function Shop({ open, onClose }: Props) {
               })}
             </div>
             <p className="text-[10px] text-zinc-500 mt-2 italic">
-              Золотой и серебряный ключи очень редко выпадают из кликера. Здесь — за деньги.
+              Редкие ключи — за монеты.
             </p>
           </section>
 
@@ -143,7 +143,7 @@ export default function Shop({ open, onClose }: Props) {
 
           {/* подсказка */}
           <div className="text-[10px] text-zinc-500 italic border-t border-zinc-700/40 pt-3">
-            Деньги — продажа лута из инвентаря справа. Клик по предмету = продажа.
+            Монеты — продажа лута со вкладки «Лут».
           </div>
         </div>
       </motion.div>

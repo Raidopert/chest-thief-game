@@ -77,7 +77,7 @@ export default function ResourceBar({ onOpenShop }: Props) {
       {/* Выбор ключа */}
       <div className="mt-3 pt-3 border-t border-zinc-700">
         <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-mono mb-2">
-          Активный ключ (зажать на сундуке):
+          Ключ
         </div>
         <div className="grid grid-cols-5 gap-1.5">
           {KEY_TYPES.map((k) => {
@@ -130,7 +130,6 @@ export default function ResourceBar({ onOpenShop }: Props) {
                 background: r.color + "22",
                 border: `1px solid ${r.color}44`,
               }}
-              title={`${r.name}: шанс ${r.weight}/1000`}
             >
               {r.emoji} {r.name}
             </span>

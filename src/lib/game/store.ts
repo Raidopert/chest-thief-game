@@ -305,14 +305,45 @@ export const useGameStore = create<GameState>()(
       spawnChestTick: () => {
         const state = get();
         if (state.chests.length >= MAX_CHESTS_ON_SCREEN) return;
-        // occasionally also keep spawn chance even if not full
         const visual: ChestVisualKind = pickRandom(CHEST_VISUALS).id;
         const visualDef = CHEST_VISUALS.find((v) => v.id === visual)!;
         const size = Math.round(randRange(visualDef.sizeRange[0], visualDef.sizeRange[1]));
-        // позиция в % — не у краёв
-        const x = randRange(8, 78);
-        const y = randRange(12, 80);
-        // скрытый тир 1..7 — НЕ зависит от визуала (игрок не знает)
+
+        // Ищем позицию, не пересекающуюся с существующими сундуками.
+        // Позиции в % от 0..100. Минимальное расстояние между центрами
+        // зависит от размера поля — берём 18% по диагонали (достаточно для
+        // сундуков 70-130px на поле 400-800px).
+        const MIN_DIST_PERCENT = 18;
+        let chosenX = 0;
+        let chosenY = 0;
+        let foundValid = false;
+        for (let attempt = 0; attempt < 15; attempt++) {
+          const x = randRange(10, 78);
+          const y = randRange(14, 78);
+          let ok = true;
+          for (const c of state.chests) {
+            const dx = c.x - x;
+            const dy = c.y - y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < MIN_DIST_PERCENT) {
+              ok = false;
+              break;
+            }
+          }
+          if (ok) {
+            chosenX = x;
+            chosenY = y;
+            foundValid = true;
+            break;
+          }
+          // запоминаем последнюю попытку как фолбэк
+          chosenX = x;
+          chosenY = y;
+        }
+        // Если не нашли свободное место (редкий случай при почти полном поле)
+        // — не спавним, чтобы не наслаивать.
+        if (!foundValid && state.chests.length >= 4) return;
+
         const hiddenTier = randInt(1, CHEST_HIDDEN_TIERS);
         const fadeMs = Math.round(randRange(CHEST_FADE_MS_MIN, CHEST_FADE_MS_MAX));
         const lifeMs = Math.round(randRange(CHEST_LIFE_MS_MIN, CHEST_LIFE_MS_MAX));
@@ -320,8 +351,8 @@ export const useGameStore = create<GameState>()(
           id: newChestId(),
           visual,
           size,
-          x,
-          y,
+          x: chosenX,
+          y: chosenY,
           hiddenTier,
           spawnAt: Date.now(),
           fadeMs,

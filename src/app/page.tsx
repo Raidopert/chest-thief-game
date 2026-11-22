@@ -87,9 +87,6 @@ export default function Home() {
             <h1 className="text-xl md:text-2xl font-black text-zinc-100 tracking-[0.2em] leading-none uppercase">
               Сундучный Вор
             </h1>
-            <p className="text-[10px] md:text-[11px] text-zinc-500 font-mono uppercase tracking-widest mt-1">
-              Тёмное фэнтези · лук · ключи · 1000 реликвий · 7 редкостей
-            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -114,14 +111,6 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-3 md:gap-4">
               {/* Кликер — компактный слева на десктопе */}
               <div className="rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] p-2 md:p-3 flex flex-col items-center">
-                <div className="w-full flex items-center justify-between mb-1.5">
-                  <div className="text-[9px] uppercase tracking-widest text-zinc-400 font-mono">
-                    Демонический лук
-                  </div>
-                  <div className="text-[9px] text-zinc-500 font-mono">
-                    ~18%
-                  </div>
-                </div>
                 <ClickerScene />
               </div>
               {/* Поле сундуков */}
@@ -152,7 +141,7 @@ export default function Home() {
         </footer>
 
         <div className="text-[10px] text-zinc-600 font-mono text-center pb-2 uppercase tracking-wider">
-          Левая рука = кликер · Правая = авто-бой · Сундук = удержание ключом · Лут = продать/надеть
+          Зажми сундук ключом · Клик по луту — продать или надеть
         </div>
       </main>
 

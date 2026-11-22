@@ -57,15 +57,26 @@ export default function HeroInventory({ onPickItemForSlot }: Props) {
   // SVG силуэт + ячейки поверх
 
   return (
-    <div className="rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] p-3 md:p-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-[10px] uppercase tracking-widest text-zinc-400 font-mono">
-          Герой-душитель
+    <div
+      className="relative rounded-2xl border border-zinc-700 overflow-hidden p-3 md:p-4"
+      style={{
+        backgroundImage: "url('/bg/hero-bg.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center top",
+      }}
+    >
+      {/* тёмная подложка для читаемости */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/65 to-black/85 pointer-events-none" />
+
+      <div className="relative flex flex-col">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-[10px] uppercase tracking-widest text-zinc-300 font-mono drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            Герой-душитель
+          </div>
+          <div className="text-[10px] text-zinc-400 font-mono drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            Уровень {heroLevel}
+          </div>
         </div>
-        <div className="text-[10px] text-zinc-500 font-mono">
-          Уровень {heroLevel}
-        </div>
-      </div>
 
       {/* Параметры */}
       <div className="grid grid-cols-4 gap-1 mb-3 text-center">
@@ -225,6 +236,7 @@ export default function HeroInventory({ onPickItemForSlot }: Props) {
           />
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

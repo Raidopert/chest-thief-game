@@ -79,10 +79,10 @@ export default function AutoBattle() {
     <div className="rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] p-3 md:p-4">
       <div className="flex items-center justify-between mb-2">
         <div className="text-[10px] uppercase tracking-widest text-zinc-400 font-mono">
-          Авто-боец (правая рука)
+          Бой
         </div>
         <div className="text-[10px] text-zinc-500 font-mono">
-          {interval}мс / удар
+          {battle.enemiesKilled} убито
         </div>
       </div>
 
@@ -91,31 +91,21 @@ export default function AutoBattle() {
         className="relative w-full rounded-xl overflow-hidden border border-zinc-700"
         style={{
           aspectRatio: "1 / 1",
-          background:
-            "radial-gradient(ellipse at 30% 50%, #2a2530 0%, #15131c 60%, #08060a 100%)",
+          backgroundImage: "url('/bg/battle-bg.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }}
       >
-        {/* каменная арена — булыжники и решётка */}
+        {/* тёмная подложка для контраста */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/45 to-black/80 pointer-events-none" />
+
+        {/* кровавые пятна поверх фона для динамики */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
-          {/* решётка окна слева */}
-          <g opacity="0.4">
-            <rect x="5" y="20" width="30" height="50" fill="#0a0a0f" stroke="#3f3f46" strokeWidth="1" />
-            <line x1="20" y1="20" x2="20" y2="70" stroke="#3f3f46" strokeWidth="0.8" />
-            <line x1="5" y1="45" x2="35" y2="45" stroke="#3f3f46" strokeWidth="0.8" />
-          </g>
-          {/* булыжники */}
-          {[
-            { cx: 30, cy: 195, rx: 15, ry: 4 },
-            { cx: 100, cy: 196, rx: 30, ry: 5 },
-            { cx: 170, cy: 195, rx: 20, ry: 4 },
-          ].map((e, i) => (
-            <ellipse key={i} cx={e.cx} cy={e.cy} rx={e.rx} ry={e.ry} fill="#0a0a0f" />
-          ))}
           {/* пятна крови */}
-          <ellipse cx="50" cy="190" rx="15" ry="3" fill="rgba(120,30,30,0.4)" />
-          <ellipse cx="140" cy="188" rx="18" ry="3" fill="rgba(120,30,30,0.5)" />
-          {/* череп */}
-          <g transform="translate(110, 192) scale(0.7)" opacity="0.6">
+          <ellipse cx="50" cy="190" rx="15" ry="3" fill="rgba(120,30,30,0.5)" />
+          <ellipse cx="140" cy="188" rx="18" ry="3" fill="rgba(120,30,30,0.6)" />
+          {/* череп на полу */}
+          <g transform="translate(110, 192) scale(0.7)" opacity="0.7">
             <ellipse cx="0" cy="0" rx="6" ry="4" fill="#e7e5e4" />
             <ellipse cx="-2" cy="-1" rx="1" ry="1.5" fill="#0a0a0f" />
             <ellipse cx="2" cy="-1" rx="1" ry="1.5" fill="#0a0a0f" />
@@ -252,9 +242,6 @@ export default function AutoBattle() {
         {/* надпись авто-боя */}
         <div className="absolute top-2 left-2 text-[9px] uppercase tracking-widest text-zinc-500 font-mono">
           AUTO
-        </div>
-        <div className="absolute bottom-2 right-2 text-[9px] text-zinc-500 font-mono">
-          {battle.enemiesKilled} убито
         </div>
       </div>
 

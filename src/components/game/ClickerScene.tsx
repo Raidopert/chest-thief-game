@@ -83,22 +83,27 @@ export default function ClickerScene() {
     <div className="flex flex-col items-center gap-3">
       <button
         onClick={handleClick}
-        aria-label="Душить воришку кликом — добыть ключи"
+        aria-label="Бей воришку"
         className="relative rounded-2xl overflow-hidden border-2 border-zinc-700 shadow-[0_0_30px_rgba(220,38,38,0.35)] select-none touch-manipulation active:scale-[0.98] transition-transform cursor-pointer"
-        style={{ width: "100%", maxWidth: 280, aspectRatio: "1 / 1" }}
+        style={{
+          width: "100%",
+          maxWidth: 280,
+          aspectRatio: "1 / 1",
+          backgroundImage: "url('/bg/clicker-bg.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       >
-        {/* фон — готический склеп */}
+        {/* тёмная подложка поверх PNG для контраста */}
+        <div className="absolute inset-0 bg-black/55 pointer-events-none" />
+
+        {/* фон — готический склеп (SVG поверх PNG) */}
         <svg
           viewBox="0 0 400 400"
-          className="w-full h-full block"
+          className="absolute inset-0 w-full h-full block"
           style={{ transform: vibrate ? "translateX(2px)" : "translateX(0)" }}
         >
           <defs>
-            <radialGradient id="cryptBg" cx="50%" cy="55%" r="80%">
-              <stop offset="0%" stopColor="#2a2530" />
-              <stop offset="55%" stopColor="#15131c" />
-              <stop offset="100%" stopColor="#08060a" />
-            </radialGradient>
             <linearGradient id="demonBow" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#1c1c25" />
               <stop offset="40%" stopColor="#3a2a3a" />
@@ -119,77 +124,6 @@ export default function ClickerScene() {
               <stop offset="100%" stopColor="#dc2626" stopOpacity="0" />
             </radialGradient>
           </defs>
-
-          {/* фон склепа */}
-          <rect width="400" height="400" fill="url(#cryptBg)" />
-
-          {/* каменные блоки стен */}
-          <g opacity="0.4">
-            {[0, 50, 100, 150, 200, 250, 300, 350].map((y, i) => (
-              <g key={y}>
-                {[0, 70, 140, 210, 280, 350].map((x, j) => (
-                  <rect
-                    key={x}
-                    x={x + (i % 2 === 0 ? 0 : 35)}
-                    y={y}
-                    width={66}
-                    height={46}
-                    fill="#1a1a22"
-                    stroke="#0a0a0f"
-                    strokeWidth="1.5"
-                  />
-                ))}
-              </g>
-            ))}
-          </g>
-
-          {/* готическая арка окно в центре верха */}
-          <g opacity="0.6">
-            <path
-              d="M 170 30 L 170 80 Q 170 50 200 50 Q 230 50 230 80 L 230 30 Z"
-              fill="#0a0a0f"
-              stroke="#3f3f46"
-              strokeWidth="2"
-            />
-            {/* витраж — трещины */}
-            <path d="M 200 50 L 200 90 M 185 60 L 215 60 M 175 75 L 225 75" stroke="#3f3f46" strokeWidth="0.8" />
-          </g>
-
-          {/* факелы по бокам */}
-          <g>
-            {/* левый факел */}
-            <rect x="48" y="160" width="6" height="60" fill="#3a2a18" stroke="#1a1208" strokeWidth="1" rx="2" />
-            <ellipse cx="51" cy="160" rx="10" ry="6" fill="#5b3a1a" stroke="#1a1208" strokeWidth="1" />
-            {/* пламя */}
-            <ellipse cx="51" cy="148" rx="6" ry="14" fill="#fbbf24">
-              <animate attributeName="ry" values="14;16;12;14" dur="0.5s" repeatCount="indefinite" />
-            </ellipse>
-            <ellipse cx="51" cy="152" rx="3" ry="8" fill="#dc2626" />
-            <circle cx="51" cy="155" r="40" fill="url(#torchGlow)" opacity="0.7" />
-
-            {/* правый факел */}
-            <rect x="346" y="160" width="6" height="60" fill="#3a2a18" stroke="#1a1208" strokeWidth="1" rx="2" />
-            <ellipse cx="349" cy="160" rx="10" ry="6" fill="#5b3a1a" stroke="#1a1208" strokeWidth="1" />
-            <ellipse cx="349" cy="148" rx="6" ry="14" fill="#fbbf24">
-              <animate attributeName="ry" values="14;12;16;14" dur="0.6s" repeatCount="indefinite" />
-            </ellipse>
-            <ellipse cx="349" cy="152" rx="3" ry="8" fill="#dc2626" />
-            <circle cx="349" cy="155" r="40" fill="url(#torchGlow)" opacity="0.7" />
-          </g>
-
-          {/* каменный пол — булыжники */}
-          <g opacity="0.6">
-            <ellipse cx="60" cy="385" rx="50" ry="10" fill="#0a0a0f" />
-            <ellipse cx="200" cy="385" rx="80" ry="8" fill="#0a0a0f" />
-            <ellipse cx="340" cy="385" rx="55" ry="10" fill="#0a0a0f" />
-            {/* череп на полу */}
-            <g transform="translate(330, 380) scale(0.8)" opacity="0.7">
-              <ellipse cx="0" cy="0" rx="8" ry="6" fill="#e7e5e4" />
-              <ellipse cx="-3" cy="-1" rx="1.5" ry="2" fill="#0a0a0f" />
-              <ellipse cx="3" cy="-1" rx="1.5" ry="2" fill="#0a0a0f" />
-              <path d="M -2 3 L 0 5 L 2 3" stroke="#0a0a0f" strokeWidth="0.5" fill="none" />
-            </g>
-          </g>
 
           {/* === ЧУМНОЙ ВОРИШКА В КАПЮШОНЕ === */}
           <g>
@@ -352,9 +286,6 @@ export default function ClickerScene() {
 
           {/* свечение — фокус на шее */}
           <circle cx="200" cy="210" r="50" fill="url(#bloodGlow)" opacity={vibrate ? 0.9 : 0.4} />
-
-          {/* тёмные виньетки по углам */}
-          <rect width="400" height="400" fill="url(#cryptBg)" opacity="0.3" pointerEvents="none" />
         </svg>
 
         {/* всплывающие числа */}
@@ -383,7 +314,7 @@ export default function ClickerScene() {
 
         {/* подсказка */}
         <div className="absolute bottom-2 left-0 right-0 text-center text-[10px] uppercase tracking-wider text-zinc-400 font-medium">
-          Кликай — души воришку — получай ключи
+          Бей воришку — получай ключи
         </div>
       </button>
 

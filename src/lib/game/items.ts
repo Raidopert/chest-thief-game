@@ -1,7 +1,15 @@
 // Генератор 1000 предметов, распределённых по 7 редкостям.
 // Имена формируются процедурно из префиксов + базы + суффиксов.
+// Каждый предмет имеет слот экипировки (или null) и характеристики.
 
-import { RARITIES, type LootItem, type RarityId } from "./config";
+import {
+  RARITIES,
+  type EquipSlotId,
+  type ItemStats,
+  type LootItem,
+  type RarityId,
+  RARITY_STAT_MULT,
+} from "./config";
 
 const PREFIXES = [
   "Древний", "Проклятый", "Благословенный", "Огненный", "Ледяной",
@@ -22,66 +30,72 @@ const SUFFIXES = [
   "Вора", "Короля", "Нищего", "Странника", "Палача",
 ];
 
-// Базы предметов по категориям (русские названия + эмодзи)
-interface BaseItem { name: string; emoji: string; }
+// Базы предметов с указанием слота экипировки и характера стат
+// slot: null = нельзя надеть
+// kind: "weapon" | "shield" | "armor_head" | "armor_body" | "armor_waist" | "armor_feet" | "amulet" | "artifact" | "consumable"
+interface BaseItem {
+  name: string;
+  emoji: string;
+  kind: string;
+}
+
 const ITEM_BASES: BaseItem[] = [
-  // Оружие
-  { name: "меч",    emoji: "⚔" },
-  { name: "кинжал", emoji: "🔪" },
-  { name: "лук",    emoji: "🏹" },
-  { name: "посох",  emoji: "🪄" },
-  { name: "молот",  emoji: "🔨" },
-  { name: "копьё",  emoji: "🔱" },
-  { name: "секира", emoji: "🪓" },
-  { name: "арбалет",emoji: "🎯" },
-  { name: "коса",   emoji: "🪦" },
-  { name: "булава", emoji: "🔱" },
-  // Броня
-  { name: "шлем",       emoji: "⛑" },
-  { name: "нагрудник",  emoji: "🛡" },
-  { name: "сапоги",     emoji: "🥾" },
-  { name: "перчатки",   emoji: "🧤" },
-  { name: "плащ",       emoji: "🧥" },
-  { name: "щит",        emoji: "🛡" },
-  { name: "поножи",     emoji: "🦵" },
-  { name: "наплечники", emoji: "🎽" },
+  // Оружие (leftHand/rightHand)
+  { name: "меч",     emoji: "⚔",  kind: "weapon" },
+  { name: "кинжал",  emoji: "🔪", kind: "weapon" },
+  { name: "посох",   emoji: "🪄", kind: "weapon" },
+  { name: "молот",   emoji: "🔨", kind: "weapon" },
+  { name: "копьё",   emoji: "🔱", kind: "weapon" },
+  { name: "секира",  emoji: "🪓", kind: "weapon" },
+  { name: "булава",  emoji: "🔱", kind: "weapon" },
+  // Щиты
+  { name: "щит",     emoji: "🛡", kind: "shield" },
+  // Шлемы
+  { name: "шлем",       emoji: "⛑", kind: "armor_head" },
+  { name: "корона",     emoji: "👑", kind: "armor_head" },
+  { name: "диадема",    emoji: "✨", kind: "armor_head" },
+  // Нагрудники
+  { name: "нагрудник",  emoji: "🛡", kind: "armor_body" },
+  { name: "кираса",     emoji: "🦺", kind: "armor_body" },
+  // Пояс
+  { name: "пояс",       emoji: "🟫", kind: "armor_waist" },
+  // Сапоги
+  { name: "сапоги",     emoji: "🥾", kind: "armor_feet" },
+  { name: "поножи",     emoji: "🦵", kind: "armor_feet" },
+  // Амулеты
+  { name: "амулет",     emoji: "📿", kind: "amulet" },
+  { name: "ожерелье",   emoji: "📿", kind: "amulet" },
   // Артефакты
-  { name: "амулет",  emoji: "📿" },
-  { name: "кольцо",  emoji: "💍" },
-  { name: "корона",  emoji: "👑" },
-  { name: "скипетр", emoji: "杖" },
-  { name: "орб",     emoji: "🔮" },
-  { name: "диадема", emoji: "✨" },
-  { name: "талисман",emoji: "🧿" },
-  { name: "печатка", emoji: "Stamp" },
-  // Зелья
-  { name: "зелье здоровья", emoji: "🧪" },
-  { name: "зелье маны",     emoji: "💧" },
-  { name: "зелье силы",     emoji: "💪" },
-  { name: "зелье удачи",    emoji: "🍀" },
-  { name: "зелье скорости", emoji: "💨" },
-  { name: "эликсир жизни",  emoji: "🍷" },
-  { name: "настой тьмы",    emoji: "🥶" },
-  { name: "отвар хаоса",    emoji: "🫙" },
-  // Материалы
-  { name: "кристалл",   emoji: "💎" },
-  { name: "руна",       emoji: "🪬" },
-  { name: "свиток",     emoji: "📜" },
-  { name: "фрагмент",   emoji: "🧩" },
-  { name: "эссенция",   emoji: "🔆" },
-  { name: "осколок",    emoji: "💔" },
-  { name: "слиток",     emoji: "🪙" },
-  { name: "перо",       emoji: "🪶" },
-  { name: "кость",      emoji: "🦴" },
-  { name: "сердце",     emoji: "❤" },
-  // Драгоценности
-  { name: "жемчужина", emoji: "🫧" },
-  { name: "рубин",     emoji: "🔴" },
-  { name: "сапфир",    emoji: "🔵" },
-  { name: "изумруд",   emoji: "🟢" },
-  { name: "алмаз",     emoji: "💎" },
-  { name: "топаз",     emoji: "🟡" },
-  { name: "аметист",   emoji: "🟣" },
+  { name: "кольцо",     emoji: "💍", kind: "artifact" },
+  { name: "перчатки",   emoji: "🧤", kind: "artifact" },
+  { name: "плащ",       emoji: "🧥", kind: "artifact" },
+  { name: "наплечники", emoji: "🎽", kind: "artifact" },
+  { name: "скипетр",    emoji: "🪄", kind: "artifact" },
+  { name: "орб",        emoji: "🔮", kind: "artifact" },
+  { name: "талисман",   emoji: "🧿", kind: "artifact" },
+  { name: "печатка",    emoji: "Stamp", kind: "artifact" },
+  // Расходники (не надеваются)
+  { name: "зелье здоровья", emoji: "🧪", kind: "consumable" },
+  { name: "зелье маны",     emoji: "💧", kind: "consumable" },
+  { name: "зелье силы",     emoji: "💪", kind: "consumable" },
+  { name: "зелье удачи",    emoji: "🍀", kind: "consumable" },
+  { name: "зелье скорости", emoji: "💨", kind: "consumable" },
+  { name: "эликсир жизни",  emoji: "🍷", kind: "consumable" },
+  // Материалы (не надеваются)
+  { name: "кристалл",   emoji: "💎", kind: "material" },
+  { name: "руна",       emoji: "🪬", kind: "material" },
+  { name: "свиток",     emoji: "📜", kind: "material" },
+  { name: "фрагмент",   emoji: "🧩", kind: "material" },
+  { name: "эссенция",   emoji: "🔆", kind: "material" },
+  { name: "слиток",     emoji: "🪙", kind: "material" },
+  // Драгоценности (артефакты — можно надеть)
+  { name: "жемчужина", emoji: "🫧", kind: "artifact" },
+  { name: "рубин",     emoji: "🔴", kind: "artifact" },
+  { name: "сапфир",    emoji: "🔵", kind: "artifact" },
+  { name: "изумруд",   emoji: "🟢", kind: "artifact" },
+  { name: "алмаз",     emoji: "💎", kind: "artifact" },
+  { name: "топаз",     emoji: "🟡", kind: "artifact" },
+  { name: "аметист",   emoji: "🟣", kind: "artifact" },
 ];
 
 // Простой детерминированный ГПСЧ для повторяемых предметов
@@ -102,13 +116,75 @@ function randInt(rng: () => number, min: number, max: number): number {
   return Math.floor(rng() * (max - min + 1)) + min;
 }
 
+// Определяет слот экипировки по типу базы
+function slotForKind(kind: string): EquipSlotId | null {
+  switch (kind) {
+    case "weapon":
+    case "shield":
+      // конкретная рука выбирается игроком при надевании — храним как any-hand
+      // но всё равно помечаем какEquipSlotId для категории "any"
+      return "leftHand"; // заглушка — real slot определяется при надевании
+    case "armor_head":   return "head";
+    case "armor_body":   return "body";
+    case "armor_waist":  return "waist";
+    case "armor_feet":   return "feet";
+    case "amulet":       return "amulet";
+    case "artifact":     return "artifact1"; // заглушка — реальные артефактные слоты
+    default:             return null; // consumable, material
+  }
+}
+
+// Категория предмета для фильтрации в UI надевания
+export type ItemCategory =
+  | "weapon"
+  | "shield"
+  | "armor_head"
+  | "armor_body"
+  | "armor_waist"
+  | "armor_feet"
+  | "amulet"
+  | "artifact"
+  | "consumable"
+  | "material";
+
+// Характеристики по типу базы и редкости
+function statsForKind(kind: string, mult: number): ItemStats {
+  const isJunk = kind === "consumable" || kind === "material";
+  const atk = isJunk ? 0 : Math.max(1, Math.round(randIntStats(kind, mult, "atk")));
+  const def = Math.max(0, Math.round(randIntStats(kind, mult, "def")));
+  const spd = Math.max(0, Math.round(randIntStats(kind, mult, "spd")));
+  const luk = Math.max(0, Math.round(randIntStats(kind, mult, "luk")));
+  return { attack: atk, defense: def, speed: spd, luck: luk };
+}
+
+// детерминированный ролл стат по типу — для разнообразия используем mulberry32 с seed = kind+mult
+function randIntStats(kind: string, mult: number, stat: "atk" | "def" | "spd" | "luk"): number {
+  // базовые значения по типу
+  const base: Record<string, { atk: number; def: number; spd: number; luk: number }> = {
+    weapon:        { atk: 3, def: 0, spd: 0, luk: 0 },
+    shield:        { atk: 0, def: 3, spd: 0, luk: 0 },
+    armor_head:    { atk: 0, def: 2, spd: 0, luk: 1 },
+    armor_body:    { atk: 0, def: 4, spd: 0, luk: 0 },
+    armor_waist:   { atk: 1, def: 1, spd: 1, luk: 1 },
+    armor_feet:    { atk: 0, def: 1, spd: 3, luk: 0 },
+    amulet:        { atk: 0, def: 0, spd: 0, luk: 4 },
+    artifact:      { atk: 1, def: 1, spd: 1, luk: 2 },
+    consumable:    { atk: 0, def: 0, spd: 0, luk: 0 },
+    material:      { atk: 0, def: 0, spd: 0, luk: 0 },
+  };
+  const b = base[kind] ?? base.artifact;
+  // лёгкий разброс ±20%
+  const variance = 0.8 + Math.random() * 0.5;
+  return Math.floor(b[stat] * mult * variance);
+}
+
 function buildItems(): LootItem[] {
   const items: LootItem[] = [];
   const seen = new Set<string>();
-  let seed = 1337;
-  const rng = mulberry32(seed);
+  const rng = mulberry32(1337);
 
   for (const rarity of RARITIES) {
+    const mult = RARITY_STAT_MULT[rarity.id];
     let created = 0;
     let attempts = 0;
     const target = rarity.itemCount;
@@ -117,7 +193,6 @@ function buildItems(): LootItem[] {
       const base = pick(ITEM_BASES, rng);
       const prefix = pick(PREFIXES, rng);
       const suffix = pick(SUFFIXES, rng);
-      // разные шаблоны имён для разнообразия
       const tpl = Math.floor(rng() * 4);
       let name: string;
       if (tpl === 0) name = `${prefix} ${base.name}`;
@@ -129,16 +204,20 @@ function buildItems(): LootItem[] {
       seen.add(name);
 
       const value = randInt(rng, rarity.valueMin, rarity.valueMax);
+      const slot = slotForKind(base.kind);
+      const stats = statsForKind(base.kind, mult);
+
       items.push({
         id: `${rarity.id}-${created}`,
         name,
         rarity: rarity.id,
         emoji: base.emoji,
         baseValue: value,
+        slot,
+        stats,
       });
       created++;
     }
-    // если не хватило (мало комбинаций) — добиваем пронумерованными
     let filler = 0;
     while (created < target) {
       const base = pick(ITEM_BASES, rng);
@@ -147,12 +226,16 @@ function buildItems(): LootItem[] {
       if (seen.has(name)) { filler++; continue; }
       seen.add(name);
       const value = randInt(rng, rarity.valueMin, rarity.valueMax);
+      const slot = slotForKind(base.kind);
+      const stats = statsForKind(base.kind, mult);
       items.push({
         id: `${rarity.id}-${created}`,
         name,
         rarity: rarity.id,
         emoji: base.emoji,
         baseValue: value,
+        slot,
+        stats,
       });
       created++;
       filler++;
@@ -164,7 +247,6 @@ function buildItems(): LootItem[] {
 
 export const ALL_ITEMS: LootItem[] = buildItems();
 
-// Кэш по редкости
 export const ITEMS_BY_RARITY: Record<RarityId, LootItem[]> = RARITIES.reduce(
   (acc, r) => {
     acc[r.id] = ALL_ITEMS.filter((i) => i.rarity === r.id);
@@ -173,5 +255,28 @@ export const ITEMS_BY_RARITY: Record<RarityId, LootItem[]> = RARITIES.reduce(
   {} as Record<RarityId, LootItem[]>,
 );
 
-// Подтверждение количества
 export const TOTAL_ITEMS = ALL_ITEMS.length;
+
+// Категория для надевания (используется в UI)
+export function itemCategory(itemId: string): ItemCategory {
+  const it = ALL_ITEMS.find((i) => i.id === itemId);
+  if (!it) return "consumable";
+  // восстанавливаем kind по slot/stats — проще: ищем по emoji+name
+  // но у нас есть только slot. Используем slot:
+  if (it.slot === null) {
+    // расходник или материал — различаем по эмодзи
+    if (it.emoji === "🧪" || it.emoji === "💧" || it.emoji === "💪" ||
+        it.emoji === "🍀" || it.emoji === "💨" || it.emoji === "🍷") return "consumable";
+    return "material";
+  }
+  // оружие даёт attack > 0 без defense; щит — defense > 0 без attack
+  if (it.slot === "leftHand") {
+    return it.stats.attack > it.stats.defense ? "weapon" : "shield";
+  }
+  if (it.slot === "head") return "armor_head";
+  if (it.slot === "body") return "armor_body";
+  if (it.slot === "waist") return "armor_waist";
+  if (it.slot === "feet") return "armor_feet";
+  if (it.slot === "amulet") return "amulet";
+  return "artifact";
+}

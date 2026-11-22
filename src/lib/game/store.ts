@@ -5,12 +5,17 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
+  ATTACK_INTERVAL_BASE_MS,
+  ATTACK_INTERVAL_MIN_MS,
   CHEST_FADE_MS_MAX,
   CHEST_FADE_MS_MIN,
   CHEST_HIDDEN_TIERS,
   CHEST_LIFE_MS_MAX,
   CHEST_LIFE_MS_MIN,
   CHEST_VISUALS,
+  ENEMY_TYPES,
+  EQUIP_SLOTS,
+  HERO_BASE,
   KEY_BY_ID,
   KEY_DROP_RATE_PER_CLICK,
   KEY_TYPES,
@@ -18,8 +23,13 @@ import {
   RARITIES,
   RARITY_BY_ID,
   SHOP_BOOSTERS,
+  xpForLevel,
+  type BattleEnemy,
+  type BattleState,
   type ChestVisualKind,
+  type EquipSlotId,
   type InventoryStack,
+  type ItemStats,
   type KeyRarity,
   type LuckBoost,
   type RarityId,
@@ -33,7 +43,23 @@ interface GameStats {
   itemsFound: number;
   moneyEarned: number;
   bestRarityFound: RarityId | null;
+  enemiesKilled: number;
+  heroLevel: number;
 }
+
+// Надетый предмет (один экземпляр, не стэк)
+export interface EquippedItem {
+  uid: string;
+  itemId: string;
+  name: string;
+  rarity: RarityId;
+  emoji: string;
+  baseValue: number;
+  stats: ItemStats;
+  slot: EquipSlotId | null;
+}
+
+type EquippedMap = Partial<Record<EquipSlotId, EquippedItem>>;
 
 interface GameState {
   hydrated: boolean;
@@ -51,6 +77,12 @@ interface GameState {
 
   // инвентарь
   inventory: InventoryStack[];
+
+  // надетая экипировка героя
+  equipped: EquippedMap;
+
+  // авто-бой правой руки
+  battle: BattleState;
 
   // последний выпавший предмет (для показа анимации)
   lastDrop: { uid: string; itemId: string; name: string; rarity: RarityId; emoji: string; value: number; fromChest: string } | null;
@@ -77,6 +109,17 @@ interface GameState {
   clearLuckIfExpired: (now: number) => void;
   setHydrated: () => void;
   resetGame: () => void;
+
+  // экипировка
+  isSlotCompatible: (itemSlot: EquipSlotId | null, targetSlot: EquipSlotId) => boolean;
+  equipItem: (stackUid: string, targetSlot: EquipSlotId) => boolean;
+  unequipSlot: (slot: EquipSlotId) => void;
+  computeHeroStats: () => ItemStats;
+  computeAttackIntervalMs: () => number;
+
+  // авто-бой
+  spawnEnemy: () => void;
+  battleTick: (now: number) => void;
 }
 
 // Утилиты рандома
@@ -173,6 +216,46 @@ function rarityRank(r: RarityId): number {
   return BEST_RARITY_ORDER.indexOf(r);
 }
 
+// Совместимость слота предмета с целевым слотом экипировки
+function isSlotCompatibleFn(itemSlot: EquipSlotId | null, targetSlot: EquipSlotId): boolean {
+  if (!itemSlot) return false;
+  // Артефакты — можно в любой artifact-слот
+  if (targetSlot.startsWith("artifact") && itemSlot.startsWith("artifact")) return true;
+  // Оружие/щит (leftHand-категория) — можно в любую руку
+  if (itemSlot === "leftHand" && (targetSlot === "leftHand" || targetSlot === "rightHand")) return true;
+  // Прочее — точное совпадение
+  return itemSlot === targetSlot;
+}
+
+// Создаёт врага по случайному типу
+function makeEnemy(): BattleEnemy {
+  const t = pickRandom(ENEMY_TYPES);
+  return {
+    id: `enemy-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+    typeId: t.id,
+    hp: t.hp,
+    maxHp: t.hp,
+    spawnAt: Date.now(),
+  };
+}
+
+// Суммарные статы героя
+function computeHeroStatsFn(equipped: EquippedMap, heroLevel: number): ItemStats {
+  let atk = HERO_BASE.attack + heroLevel;
+  let def = HERO_BASE.defense;
+  let spd = HERO_BASE.speed;
+  let luk = HERO_BASE.luck;
+  for (const key of Object.keys(equipped) as EquipSlotId[]) {
+    const item = equipped[key];
+    if (!item) continue;
+    atk += item.stats.attack;
+    def += item.stats.defense;
+    spd += item.stats.speed;
+    luk += item.stats.luck;
+  }
+  return { attack: atk, defense: def, speed: spd, luck: luk };
+}
+
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
@@ -184,6 +267,16 @@ export const useGameStore = create<GameState>()(
       luckBoost: null,
       chests: [],
       inventory: [],
+      equipped: {},
+      battle: {
+        currentEnemy: null,
+        heroLevel: 1,
+        heroXp: 0,
+        heroXpNext: xpForLevel(1),
+        enemiesKilled: 0,
+        lastAttackAt: 0,
+        lastReward: null,
+      },
       lastDrop: null,
       stats: {
         totalClicks: 0,
@@ -191,6 +284,8 @@ export const useGameStore = create<GameState>()(
         itemsFound: 0,
         moneyEarned: 0,
         bestRarityFound: null,
+        enemiesKilled: 0,
+        heroLevel: 1,
       },
 
       clickClicker: () => {
@@ -326,6 +421,8 @@ export const useGameStore = create<GameState>()(
           emoji: item.emoji,
           baseValue: item.baseValue,
           count: 1,
+          slot: item.slot,
+          stats: item.stats,
         };
 
         // мерж в инвентарь
@@ -449,6 +546,216 @@ export const useGameStore = create<GameState>()(
 
       setHydrated: () => set({ hydrated: true }),
 
+      // ========== ЭКИПИРОВКА ==========
+
+      isSlotCompatible: (itemSlot, targetSlot) =>
+        isSlotCompatibleFn(itemSlot, targetSlot),
+
+      equipItem: (stackUid, targetSlot) => {
+        const state = get();
+        const stack = state.inventory.find((s) => s.uid === stackUid);
+        if (!stack) return false;
+        if (!isSlotCompatibleFn(stack.slot, targetSlot)) return false;
+
+        // копируем equipped для изменения
+        const newEquipped: EquippedMap = { ...state.equipped };
+        // если в целевом слоте что-то есть — снимаем (вернём в инвентарь)
+        const displaced = newEquipped[targetSlot];
+        delete newEquipped[targetSlot];
+
+        // создаём equipped-копию предмета
+        const equippedItem: EquippedItem = {
+          uid: stack.uid + "-eq",
+          itemId: stack.itemId,
+          name: stack.name,
+          rarity: stack.rarity,
+          emoji: stack.emoji,
+          baseValue: stack.baseValue,
+          stats: stack.stats,
+          slot: stack.slot,
+        };
+        newEquipped[targetSlot] = equippedItem;
+
+        // обновляем инвентарь: убираем 1 из стэка; если 0 — убираем стэк
+        let newInventory: InventoryStack[];
+        if (stack.count > 1) {
+          newInventory = state.inventory.map((s) =>
+            s.uid === stack.uid ? { ...s, count: s.count - 1 } : s,
+          );
+        } else {
+          newInventory = state.inventory.filter((s) => s.uid !== stack.uid);
+        }
+
+        // если было что-то в слоту — добавляем обратно
+        if (displaced) {
+          const existing = findStackFor(newInventory, displaced.itemId);
+          if (existing) {
+            newInventory = newInventory.map((s) =>
+              s.itemId === displaced.itemId ? { ...s, count: s.count + 1 } : s,
+            );
+          } else {
+            newInventory = [
+              ...newInventory,
+              {
+                uid: displaced.uid + "-back",
+                itemId: displaced.itemId,
+                name: displaced.name,
+                rarity: displaced.rarity,
+                emoji: displaced.emoji,
+                baseValue: displaced.baseValue,
+                count: 1,
+                slot: displaced.slot,
+                stats: displaced.stats,
+              },
+            ];
+          }
+        }
+
+        set({ equipped: newEquipped, inventory: newInventory });
+        return true;
+      },
+
+      unequipSlot: (slot) => {
+        const state = get();
+        const item = state.equipped[slot];
+        if (!item) return;
+        const newEquipped = { ...state.equipped };
+        delete newEquipped[slot];
+
+        // возвращаем в инвентарь
+        const existing = findStackFor(state.inventory, item.itemId);
+        let newInventory: InventoryStack[];
+        if (existing) {
+          newInventory = state.inventory.map((s) =>
+            s.itemId === item.itemId ? { ...s, count: s.count + 1 } : s,
+          );
+        } else {
+          newInventory = [
+            ...state.inventory,
+            {
+              uid: item.uid + "-back",
+              itemId: item.itemId,
+              name: item.name,
+              rarity: item.rarity,
+              emoji: item.emoji,
+              baseValue: item.baseValue,
+              count: 1,
+              slot: item.slot,
+              stats: item.stats,
+            },
+          ];
+        }
+        set({ equipped: newEquipped, inventory: newInventory });
+      },
+
+      computeHeroStats: () => {
+        const state = get();
+        return computeHeroStatsFn(state.equipped, state.battle.heroLevel);
+      },
+
+      computeAttackIntervalMs: () => {
+        const state = get();
+        const stats = computeHeroStatsFn(state.equipped, state.battle.heroLevel);
+        const interval =
+          ATTACK_INTERVAL_BASE_MS - stats.speed * 25 - (state.battle.heroLevel - 1) * 12;
+        return Math.max(ATTACK_INTERVAL_MIN_MS, interval);
+      },
+
+      // ========== АВТО-БОЙ ==========
+
+      spawnEnemy: () => {
+        const state = get();
+        if (state.battle.currentEnemy) return;
+        set({
+          battle: {
+            ...state.battle,
+            currentEnemy: makeEnemy(),
+          },
+        });
+      },
+
+      battleTick: (now) => {
+        const state = get();
+        if (!state.battle.currentEnemy) {
+          // спавним нового
+          set({
+            battle: {
+              ...state.battle,
+              currentEnemy: makeEnemy(),
+              lastAttackAt: now,
+            },
+          });
+          return;
+        }
+        const interval = state.computeAttackIntervalMs();
+        if (now - state.battle.lastAttackAt < interval) return;
+
+        const heroStats = state.computeHeroStats();
+        const enemy = state.battle.currentEnemy;
+        const newHp = enemy.hp - heroStats.attack;
+
+        if (newHp > 0) {
+          // враг выжил — просто уменьшаем hp
+          set({
+            battle: {
+              ...state.battle,
+              currentEnemy: { ...enemy, hp: newHp },
+              lastAttackAt: now,
+            },
+          });
+          return;
+        }
+
+        // враг убит
+        const enemyType = ENEMY_TYPES.find((e) => e.id === enemy.typeId)!;
+        const xpGain = enemyType.xpReward;
+        const moneyGain = randInt(enemyType.moneyReward[0], enemyType.moneyReward[1]);
+        const keyDrop = Math.random() < enemyType.keyDropChance;
+
+        // leveling
+        let level = state.battle.heroLevel;
+        let xp = state.battle.heroXp + xpGain;
+        let xpNext = state.battle.heroXpNext;
+        let leveled = false;
+        while (xp >= xpNext) {
+          xp -= xpNext;
+          level++;
+          xpNext = xpForLevel(level);
+          leveled = true;
+        }
+
+        const newKeys = keyDrop
+          ? { ...state.keys, rusty: state.keys.rusty + 1 }
+          : state.keys;
+
+        set({
+          keys: newKeys,
+          money: state.money + moneyGain,
+          battle: {
+            ...state.battle,
+            currentEnemy: makeEnemy(),
+            heroLevel: level,
+            heroXp: xp,
+            heroXpNext: xpNext,
+            enemiesKilled: state.battle.enemiesKilled + 1,
+            lastAttackAt: now,
+            lastReward: {
+              xp: xpGain,
+              money: moneyGain,
+              key: keyDrop,
+              enemyName: enemyType.name,
+            },
+          },
+          stats: {
+            ...state.stats,
+            enemiesKilled: state.battle.enemiesKilled + 1,
+            heroLevel: level,
+            moneyEarned: state.stats.moneyEarned + moneyGain,
+          },
+        });
+        void leveled; // (leveled не используется дополнительно)
+      },
+
       resetGame: () =>
         set({
           keys: { ...initialKeys },
@@ -457,6 +764,16 @@ export const useGameStore = create<GameState>()(
           luckBoost: null,
           chests: [],
           inventory: [],
+          equipped: {},
+          battle: {
+            currentEnemy: null,
+            heroLevel: 1,
+            heroXp: 0,
+            heroXpNext: xpForLevel(1),
+            enemiesKilled: 0,
+            lastAttackAt: 0,
+            lastReward: null,
+          },
           lastDrop: null,
           stats: {
             totalClicks: 0,
@@ -464,17 +781,21 @@ export const useGameStore = create<GameState>()(
             itemsFound: 0,
             moneyEarned: 0,
             bestRarityFound: null,
+            enemiesKilled: 0,
+            heroLevel: 1,
           },
         }),
     }),
     {
-      name: "chest-thief-game-v1",
+      name: "chest-thief-game-v2",
       partialize: (s) => ({
         keys: s.keys,
         money: s.money,
         selectedKey: s.selectedKey,
         luckBoost: s.luckBoost,
         inventory: s.inventory,
+        equipped: s.equipped,
+        battle: s.battle,
         stats: s.stats,
       }),
       onRehydrateStorage: () => (state) => {

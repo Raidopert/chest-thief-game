@@ -8,6 +8,8 @@ import ChestField from "@/components/game/ChestField";
 import LootInventory from "@/components/game/LootInventory";
 import Shop from "@/components/game/Shop";
 import LootReveal from "@/components/game/LootReveal";
+import HeroInventory from "@/components/game/HeroInventory";
+import AutoBattle from "@/components/game/AutoBattle";
 
 export default function Home() {
   const [shopOpen, setShopOpen] = useState(false);
@@ -17,6 +19,8 @@ export default function Home() {
   const itemsFound = useGameStore((s) => s.stats.itemsFound);
   const moneyEarned = useGameStore((s) => s.stats.moneyEarned);
   const bestRarityFound = useGameStore((s) => s.stats.bestRarityFound);
+  const enemiesKilled = useGameStore((s) => s.battle.enemiesKilled);
+  const heroLevel = useGameStore((s) => s.battle.heroLevel);
   const resetGame = useGameStore((s) => s.resetGame);
 
   // предотвращаем случайный зум на двойной тап (мобилки)
@@ -55,13 +59,13 @@ export default function Home() {
               СУНДУЧНЫЙ ВОР
             </h1>
             <p className="text-[10px] md:text-[11px] text-amber-200/50 font-mono uppercase tracking-widest">
-              лук · ключи · лут · 1000 предметов · 7 редкостей
+              лук · ключи · лут · 1000 предметов · 7 редкостей · герой · авто-бой
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                if (confirm("Сбросить весь прогресс? Деньги, ключи и лут будут утеряны.")) {
+                if (confirm("Сбросить весь прогресс? Деньги, ключи, лут, экипировка и уровень будут утеряны.")) {
                   resetGame();
                 }
               }}
@@ -75,17 +79,18 @@ export default function Home() {
         {/* Панель ресурсов */}
         <ResourceBar onOpenShop={() => setShopOpen(true)} />
 
-        {/* Основная сетка */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-3 md:gap-4">
+        {/* Основная сетка: 3 колонки на десктопе */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px_360px] gap-3 md:gap-4">
+          {/* Левая колонка: кликер-воришка + поле сундуков */}
           <div className="space-y-3 md:space-y-4">
-            {/* Кликер */}
+            {/* Кликер — левая рука героя душит воришку */}
             <div className="rounded-2xl border border-amber-900/40 bg-gradient-to-b from-[#1a1208] to-[#0e0a05] p-3 md:p-4 flex flex-col items-center">
               <div className="w-full flex items-center justify-between mb-2">
                 <div className="text-[10px] uppercase tracking-widest text-amber-200/60 font-mono">
-                  Душащий лук
+                  Левая рука — душит воришку
                 </div>
                 <div className="text-[10px] text-amber-200/40 font-mono">
-                  шанс ключа: ~18% / клик
+                  ~18% ключ / клик
                 </div>
               </div>
               <ClickerScene />
@@ -95,18 +100,25 @@ export default function Home() {
             <ChestField />
           </div>
 
-          {/* Инвентарь справа */}
-          <div className="lg:h-auto lg:sticky lg:top-3">
+          {/* Центральная колонка: герой-силуэт с экипировкой */}
+          <div className="lg:h-auto">
+            <HeroInventory />
+          </div>
+
+          {/* Правая колонка: авто-боец (правая рука) + инвентарь лута */}
+          <div className="space-y-3 md:space-y-4">
+            <AutoBattle />
             <LootInventory />
           </div>
         </div>
 
         {/* Статистика */}
-        <footer className="rounded-2xl border border-amber-900/40 bg-[#150e08]/80 p-3 grid grid-cols-2 md:grid-cols-5 gap-2 text-center">
+        <footer className="rounded-2xl border border-amber-900/40 bg-[#150e08]/80 p-3 grid grid-cols-2 md:grid-cols-6 gap-2 text-center">
           <Stat label="Кликов" value={totalClicks} />
-          <Stat label="Сундуков открыто" value={chestsOpened} />
-          <Stat label="Лута найдено" value={itemsFound} />
-          <Stat label="Монет заработано" value={moneyEarned} />
+          <Stat label="Сундуков" value={chestsOpened} />
+          <Stat label="Лута" value={itemsFound} />
+          <Stat label="Врагов" value={enemiesKilled} />
+          <Stat label="Уровень" value={heroLevel} />
           <Stat
             label="Лучшая редкость"
             value={bestRarityFound ?? "—"}
@@ -115,7 +127,7 @@ export default function Home() {
         </footer>
 
         <div className="text-[10px] text-amber-200/40 font-mono text-center pb-2">
-          Кликер = клик мышью / тап · Сундук = удержание на нём · Лут = клик для продажи · Магазин = кнопка вверху
+          Левая рука = душить воришку кликом · Правая рука = авто-бьёт врагов · Сундук = удержание ключом · Лут = клик для продажи или «надеть» · Герой = клик по ячейке
         </div>
       </main>
 

@@ -253,6 +253,9 @@ export interface LootItem {
   rarity: RarityId;
   emoji: string;
   baseValue: number;
+  // Категория для надевания: null = нельзя надеть (зелья, материалы, драгоценности)
+  slot: EquipSlotId | null;
+  stats: ItemStats;
 }
 
 // Стэк в инвентаре
@@ -264,6 +267,8 @@ export interface InventoryStack {
   emoji: string;
   baseValue: number;
   count: number;
+  slot: EquipSlotId | null;
+  stats: ItemStats;
 }
 
 export interface LuckBoost {
@@ -330,3 +335,182 @@ export const CHEST_FADE_MS_MAX = 3400;
 // Время жизни после полного проявления
 export const CHEST_LIFE_MS_MIN = 14000;
 export const CHEST_LIFE_MS_MAX = 22000;
+
+// ============================================================================
+// ЭКИПИРОВКА ГЕРОЯ
+// ============================================================================
+
+export type EquipSlotId =
+  | "head"        // шлем
+  | "amulet"      // ожерелье
+  | "body"        // нагрудник
+  | "leftHand"    // левая рука (оружие или щит) — душит воришку
+  | "rightHand"   // правая рука (оружие или щит) — авто-боец
+  | "waist"       // пояс
+  | "feet"        // сапоги
+  | "artifact1"
+  | "artifact2"
+  | "artifact3"
+  | "artifact4"
+  | "artifact5"
+  | "artifact6"
+  | "artifact7"
+  | "artifact8"
+  | "artifact9"
+  | "artifact10";
+
+export interface EquipSlot {
+  id: EquipSlotId;
+  name: string;
+  // координаты ячейки на силуэте (в % от 0..100, центр ячейки)
+  x: number;
+  y: number;
+  // размер ячейки (px в относительной системе 0..1 от ширины силуэта)
+  w: number;  // доля от ширины
+  h: number;
+  // категория предметов которые можно вставить
+  category: "weapon" | "shield" | "armor" | "amulet" | "artifact" | "any";
+}
+
+// 16 ячеек экипировки на силуэте героя (1 голова + 1 амулет + 1 тело + 2 руки + 1 пояс + 1 сапоги + 10 артефактов)
+export const EQUIP_SLOTS: EquipSlot[] = [
+  { id: "head",      name: "Голова",      x: 50, y: 12, w: 0.18, h: 0.10, category: "armor" },
+  { id: "amulet",    name: "Ожерелье",    x: 50, y: 26, w: 0.14, h: 0.08, category: "amulet" },
+  { id: "body",      name: "Нагрудник",   x: 50, y: 38, w: 0.22, h: 0.16, category: "armor" },
+  { id: "leftHand",  name: "Левая рука",  x: 22, y: 42, w: 0.16, h: 0.12, category: "any" },
+  { id: "rightHand", name: "Правая рука", x: 78, y: 42, w: 0.16, h: 0.12, category: "any" },
+  { id: "waist",     name: "Пояс",        x: 50, y: 54, w: 0.20, h: 0.06, category: "armor" },
+  { id: "feet",      name: "Сапоги",      x: 50, y: 82, w: 0.22, h: 0.10, category: "armor" },
+  // артефакты: 2 ряда по 5 (внизу, под силуэтом)
+  { id: "artifact1",  name: "Артефакт 1",  x: 12, y: 95, w: 0.12, h: 0.07, category: "artifact" },
+  { id: "artifact2",  name: "Артефакт 2",  x: 31, y: 95, w: 0.12, h: 0.07, category: "artifact" },
+  { id: "artifact3",  name: "Артефакт 3",  x: 50, y: 95, w: 0.12, h: 0.07, category: "artifact" },
+  { id: "artifact4",  name: "Артефакт 4",  x: 69, y: 95, w: 0.12, h: 0.07, category: "artifact" },
+  { id: "artifact5",  name: "Артефакт 5",  x: 88, y: 95, w: 0.12, h: 0.07, category: "artifact" },
+  { id: "artifact6",  name: "Артефакт 6",  x: 12, y: 104, w: 0.12, h: 0.07, category: "artifact" },
+  { id: "artifact7",  name: "Артефакт 7",  x: 31, y: 104, w: 0.12, h: 0.07, category: "artifact" },
+  { id: "artifact8",  name: "Артефакт 8",  x: 50, y: 104, w: 0.12, h: 0.07, category: "artifact" },
+  { id: "artifact9",  name: "Артефакт 9",  x: 69, y: 104, w: 0.12, h: 0.07, category: "artifact" },
+  { id: "artifact10", name: "Артефакт 10", x: 88, y: 104, w: 0.12, h: 0.07, category: "artifact" },
+];
+
+export const ARTIFACT_SLOTS: EquipSlotId[] = [
+  "artifact1", "artifact2", "artifact3", "artifact4", "artifact5",
+  "artifact6", "artifact7", "artifact8", "artifact9", "artifact10",
+];
+
+// Базовые статы героя (без экипировки)
+export const HERO_BASE = {
+  attack: 5,      // урон авто-боя
+  defense: 0,
+  speed: 0,       // ускоряет интервал атаки
+  luck: 0,        // добавка к luck boost
+};
+
+// ============================================================================
+// АВТО-БОЙ (правая рука героя)
+// ============================================================================
+
+export interface EnemyType {
+  id: string;
+  name: string;
+  emoji: string;
+  hp: number;
+  xpReward: number;
+  moneyReward: [number, number]; // [min, max]
+  keyDropChance: number;         // шанс что с врага выпадет ржавый ключ
+  color: string;
+}
+
+// 4 типа врагов — появляются поочерёдно
+export const ENEMY_TYPES: EnemyType[] = [
+  {
+    id: "corpse",
+    name: "Труп",
+    emoji: "🧟",
+    hp: 18,
+    xpReward: 3,
+    moneyReward: [1, 4],
+    keyDropChance: 0.02,
+    color: "#84cc16",
+  },
+  {
+    id: "skeleton",
+    name: "Скелет",
+    emoji: "💀",
+    hp: 26,
+    xpReward: 5,
+    moneyReward: [2, 6],
+    keyDropChance: 0.03,
+    color: "#e5e7eb",
+  },
+  {
+    id: "orc",
+    name: "Орк",
+    emoji: "👹",
+    hp: 42,
+    xpReward: 9,
+    moneyReward: [4, 12],
+    keyDropChance: 0.04,
+    color: "#16a34a",
+  },
+  {
+    id: "spirit",
+    name: "Дух",
+    emoji: "👻",
+    hp: 60,
+    xpReward: 14,
+    moneyReward: [8, 20],
+    keyDropChance: 0.06,
+    color: "#67e8f9",
+  },
+];
+
+export interface BattleEnemy {
+  id: string;
+  typeId: string;
+  hp: number;
+  maxHp: number;
+  spawnAt: number;
+}
+
+export interface BattleState {
+  currentEnemy: BattleEnemy | null;
+  heroLevel: number;
+  heroXp: number;
+  heroXpNext: number;
+  enemiesKilled: number;
+  lastAttackAt: number;
+  lastReward: { xp: number; money: number; key: boolean; enemyName: string } | null;
+}
+
+// Базовый интервал атаки (мс) — уменьшается с уровнем и скоростью
+export const ATTACK_INTERVAL_BASE_MS = 1100;
+export const ATTACK_INTERVAL_MIN_MS = 280;
+// XP для следующего уровня: 100 * level^1.4
+export function xpForLevel(level: number): number {
+  return Math.floor(80 * Math.pow(level, 1.4));
+}
+
+// ============================================================================
+// ХАРАКТЕРИСТИКИ ПРЕДМЕТОВ
+// ============================================================================
+
+export interface ItemStats {
+  attack: number;
+  defense: number;
+  speed: number;
+  luck: number;
+}
+
+// Базовый множитель стат по редкости
+export const RARITY_STAT_MULT: Record<RarityId, number> = {
+  common: 1,
+  uncommon: 2.4,
+  rare: 5.5,
+  epic: 12,
+  legendary: 28,
+  mythic: 65,
+  divine: 150,
+};
+

@@ -3,7 +3,13 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useGameStore } from "@/lib/game/store";
-import { RARITIES, RARITY_BY_ID, type RarityId } from "@/lib/game/config";
+import {
+  EQUIP_SLOTS,
+  RARITIES,
+  RARITY_BY_ID,
+  type EquipSlotId,
+  type RarityId,
+} from "@/lib/game/config";
 
 const RARITY_ORDER: RarityId[] = [
   "divine",
@@ -134,37 +140,55 @@ export default function LootInventory() {
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 <AnimatePresence>
-                  {stacks.map((st) => (
-                    <motion.button
-                      key={st.uid}
-                      layout
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      onClick={() => sellStack(st.uid)}
-                      className="group relative rounded-md p-1.5 text-left transition-all hover:scale-[1.03] active:scale-95"
-                      style={{
-                        background: r.color + "22",
-                        border: `1px solid ${r.color}55`,
-                      }}
-                      title={`Продать ${st.count} × ${st.name} за ${st.baseValue * st.count}💰`}
-                    >
-                      <div className="flex items-start gap-1.5">
-                        <span className="text-base leading-none" style={{ filter: `drop-shadow(0 0 3px ${r.color}66)` }}>
-                          {st.emoji}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[10px] leading-tight text-amber-100 truncate font-medium">
-                            {st.name}
-                          </div>
-                          <div className="text-[10px] font-mono leading-tight" style={{ color: r.color }}>
-                            ×{st.count} · {(st.baseValue * st.count).toLocaleString("ru-RU")}💰
+                  {stacks.map((st) => {
+                    const canEquip = st.slot !== null;
+                    return (
+                      <motion.div
+                        key={st.uid}
+                        layout
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="group relative rounded-md p-1.5 text-left"
+                        style={{
+                          background: r.color + "22",
+                          border: `1px solid ${r.color}55`,
+                        }}
+                      >
+                        <div className="flex items-start gap-1.5">
+                          <span className="text-base leading-none" style={{ filter: `drop-shadow(0 0 3px ${r.color}66)` }}>
+                            {st.emoji}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[10px] leading-tight text-amber-100 truncate font-medium">
+                              {st.name}
+                            </div>
+                            <div className="text-[10px] font-mono leading-tight" style={{ color: r.color }}>
+                              ×{st.count} · {(st.baseValue * st.count).toLocaleString("ru-RU")}💰
+                            </div>
+                            {canEquip && (
+                              <div className="text-[9px] font-mono leading-tight text-amber-200/60 mt-0.5">
+                                {formatStats(st.stats)}
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                      <div className="absolute inset-0 rounded-md bg-emerald-400/0 group-hover:bg-emerald-400/10 transition-colors pointer-events-none" />
-                    </motion.button>
-                  ))}
+                        {/* кнопки действий */}
+                        <div className="mt-1.5 flex gap-1">
+                          <button
+                            onClick={() => sellStack(st.uid)}
+                            className="flex-1 text-[9px] py-0.5 rounded font-mono bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-200 transition-colors"
+                            title="Продать весь стэк"
+                          >
+                            продать
+                          </button>
+                          {canEquip && (
+                            <EquipButton stackUid={st.uid} itemSlot={st.slot as EquipSlotId} />
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </div>
             </div>
@@ -206,5 +230,44 @@ export default function LootInventory() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function formatStats(stats: { attack: number; defense: number; speed: number; luck: number }): string {
+  const parts: string[] = [];
+  if (stats.attack > 0) parts.push(`⚔${stats.attack}`);
+  if (stats.defense > 0) parts.push(`🛡${stats.defense}`);
+  if (stats.speed > 0) parts.push(`💨${stats.speed}`);
+  if (stats.luck > 0) parts.push(`🍀${stats.luck}`);
+  return parts.join(" ");
+}
+
+// Кнопка «Надеть» — автоматически надевает в первый подходящий слот
+
+function EquipButton({ stackUid, itemSlot }: { stackUid: string; itemSlot: EquipSlotId }) {
+  const equipItem = useGameStore((s) => s.equipItem);
+  const equipped = useGameStore((s) => s.equipped);
+
+  // ищем первый подходящий свободный слот
+  const candidates = EQUIP_SLOTS.filter((s) => {
+    if (itemSlot === "leftHand") {
+      return s.id === "leftHand" || s.id === "rightHand";
+    }
+    if (itemSlot.startsWith("artifact")) {
+      return s.id.startsWith("artifact");
+    }
+    return s.id === itemSlot;
+  });
+  const firstFree = candidates.find((s) => !equipped[s.id]) ?? candidates[0];
+  if (!firstFree) return null;
+
+  return (
+    <button
+      onClick={() => equipItem(stackUid, firstFree.id)}
+      className="flex-1 text-[9px] py-0.5 rounded font-mono bg-amber-900/40 hover:bg-amber-700/60 text-amber-200 transition-colors"
+      title={`Надеть в слот: ${firstFree.name}`}
+    >
+      надеть
+    </button>
   );
 }

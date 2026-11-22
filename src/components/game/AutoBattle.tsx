@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore } from "@/lib/game/store";
 import {
@@ -43,6 +43,12 @@ export default function AutoBattle() {
 
   const [attackAnim, setAttackAnim] = useState(0); // 0..1, 0 = idle
   const [hitFlash, setHitFlash] = useState(false);
+  const [bloodParticles, setBloodParticles] = useState<
+    { id: number; dx: number; dy: number; size: number; rotate: number }[]
+  >([]);
+  const [shakeScreen, setShakeScreen] = useState(false);
+  const lastRewardRef = useRef<{ enemyName: string } | null>(null);
+  const particleCounter = useRef(0);
 
   // Анимация удара — синхронизирована с изменением lastAttackAt в store.
   // Сами тики боя идут в page.tsx (setInterval), чтобы бой работал
@@ -54,15 +60,45 @@ export default function AutoBattle() {
     const raf = requestAnimationFrame(() => {
       setAttackAnim(1);
       setHitFlash(true);
+      // спавним частицы крови — 6-8 штук разлетающихся от врага
+      const count = 6 + Math.floor(Math.random() * 3);
+      const newParts = Array.from({ length: count }, () => ({
+        id: ++particleCounter.current,
+        dx: (Math.random() - 0.5) * 80,
+        dy: -20 - Math.random() * 50,
+        size: 4 + Math.random() * 5,
+        rotate: (Math.random() - 0.5) * 360,
+      }));
+      setBloodParticles(newParts);
     });
     const t1 = setTimeout(() => setAttackAnim(0), 200);
     const t2 = setTimeout(() => setHitFlash(false), 150);
+    const t3 = setTimeout(() => setBloodParticles([]), 700);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(t1);
       clearTimeout(t2);
+      clearTimeout(t3);
     };
   }, [lastAttackAt]);
+
+  // Тряска экрана при убийстве врага (когда меняется lastReward)
+  useEffect(() => {
+    if (!battle.lastReward) return;
+    // если это новое убийство (не то же что в прошлый рендер)
+    if (lastRewardRef.current && lastRewardRef.current !== battle.lastReward) {
+      // запускаем тряску в rAF, чтобы не синхронно в теле эффекта
+      const raf = requestAnimationFrame(() => {
+        setShakeScreen(true);
+      });
+      const t = setTimeout(() => setShakeScreen(false), 450);
+      return () => {
+        cancelAnimationFrame(raf);
+        clearTimeout(t);
+      };
+    }
+    lastRewardRef.current = battle.lastReward;
+  }, [battle.lastReward]);
 
   const currentEnemyType = battle.currentEnemy
     ? ENEMY_TYPES.find((e) => e.id === battle.currentEnemy!.typeId)
@@ -76,7 +112,9 @@ export default function AutoBattle() {
   const weaponEmoji = equippedRight?.emoji ?? "✊";
 
   return (
-    <div className="rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] p-3 md:p-4">
+    <div
+      className={`rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] p-3 md:p-4 ${shakeScreen ? "screen-shake" : ""}`}
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="text-[10px] uppercase tracking-widest text-zinc-400 font-mono">
           Бой
@@ -193,22 +231,54 @@ export default function AutoBattle() {
                 exit={{ x: -40, opacity: 0, scale: 0.8, rotate: -25 }}
                 transition={{ duration: 0.25 }}
               >
+                {/* аура для элитных врагов и боссов */}
+                {battle.currentEnemy.isElite && !battle.currentEnemy.isBoss && (
+                  <motion.div
+                    className="absolute -inset-2 rounded-full pointer-events-none"
+                    style={{
+                      background: "radial-gradient(circle, rgba(56,189,248,0.4) 0%, transparent 70%)",
+                      boxShadow: "0 0 20px rgba(56,189,248,0.6)",
+                    }}
+                    animate={{ scale: [1, 1.15, 1], opacity: [0.6, 0.9, 0.6] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  />
+                )}
+                {battle.currentEnemy.isBoss && (
+                  <motion.div
+                    className="absolute -inset-4 rounded-full pointer-events-none"
+                    style={{
+                      background: "radial-gradient(circle, rgba(251,191,36,0.5) 0%, transparent 70%)",
+                      boxShadow: "0 0 30px rgba(251,191,36,0.8)",
+                    }}
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                  />
+                )}
+
                 <motion.div
-                  className="text-5xl md:text-6xl"
-                  style={{ filter: `drop-shadow(0 0 8px ${currentEnemyType.color})` }}
-                  animate={hitFlash ? { x: [0, 6, -6, 0], scale: [1, 0.95, 1.05, 1] } : { x: 0 }}
+                  className="text-5xl md:text-6xl relative"
+                  style={{
+                    filter: `drop-shadow(0 0 8px ${currentEnemyType.color})`,
+                    transform: battle.currentEnemy.isBoss ? "scale(1.4)" : battle.currentEnemy.isElite ? "scale(1.15)" : "scale(1)",
+                  }}
+                  animate={hitFlash ? { x: [0, 6, -6, 0], scale: battle.currentEnemy.isBoss ? [1.4, 1.3, 1.45, 1.4] : battle.currentEnemy.isElite ? [1.15, 1.05, 1.2, 1.15] : [1, 0.95, 1.05, 1] } : {}}
                   transition={{ duration: 0.15 }}
                 >
                   {currentEnemyType.emoji}
                 </motion.div>
                 <div
-                  className="text-[10px] font-mono mt-1"
+                  className="text-[10px] font-mono mt-1 relative font-bold"
                   style={{ color: currentEnemyType.color }}
                 >
+                  {battle.currentEnemy.isBoss ? "☠ БОСС: " : battle.currentEnemy.isElite ? "★ ЭЛИТА: " : ""}
                   {currentEnemyType.name}
                 </div>
                 {/* HP bar врага */}
-                <div className="w-24 h-2 bg-black/60 rounded-full overflow-hidden mt-1 border border-zinc-700">
+                <div
+                  className={`w-24 h-2 bg-black/60 rounded-full overflow-hidden mt-1 border ${
+                    battle.currentEnemy.isBoss ? "border-yellow-500" : battle.currentEnemy.isElite ? "border-cyan-400" : "border-zinc-700"
+                  }`}
+                >
                   <motion.div
                     className="h-full"
                     style={{ background: currentEnemyType.color }}
@@ -222,6 +292,31 @@ export default function AutoBattle() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+
+        {/* Частицы крови при ударе */}
+        <div className="absolute left-[25%] top-1/2 -translate-y-1/2 pointer-events-none">
+          {bloodParticles.map((p) => (
+            <motion.div
+              key={p.id}
+              className="absolute rounded-full"
+              style={{
+                width: p.size,
+                height: p.size,
+                background: "linear-gradient(135deg, #dc2626, #7f1d1d)",
+                boxShadow: "0 0 4px rgba(220,38,38,0.8)",
+              }}
+              initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+              animate={{
+                x: p.dx,
+                y: p.dy + 60, // падает вниз под гравитацией
+                opacity: [1, 1, 0],
+                scale: [1, 1.2, 0.8],
+                rotate: p.rotate,
+              }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+            />
+          ))}
         </div>
 
         {/* Эффект удара — вспышка на враге */}
@@ -304,6 +399,23 @@ export default function AutoBattle() {
           )}
         </AnimatePresence>
       </div>
+      <style jsx>{`
+        @keyframes screenShake {
+          0%, 100% { transform: translate(0, 0); }
+          10% { transform: translate(-3px, 2px); }
+          20% { transform: translate(3px, -2px); }
+          30% { transform: translate(-2px, -3px); }
+          40% { transform: translate(2px, 3px); }
+          50% { transform: translate(-3px, 1px); }
+          60% { transform: translate(3px, -1px); }
+          70% { transform: translate(-1px, 2px); }
+          80% { transform: translate(1px, -2px); }
+          90% { transform: translate(-2px, 1px); }
+        }
+        .screen-shake {
+          animation: screenShake 0.45s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 }

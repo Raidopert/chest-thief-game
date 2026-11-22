@@ -7,12 +7,19 @@ import { persist } from "zustand/middleware";
 import {
   ATTACK_INTERVAL_BASE_MS,
   ATTACK_INTERVAL_MIN_MS,
+  BOSS_INTERVAL,
+  BOSS_HP_MULT,
+  BOSS_KEY_DROP_CHANCE,
+  BOSS_REWARD_MULT,
   CHEST_FADE_MS_MAX,
   CHEST_FADE_MS_MIN,
   CHEST_HIDDEN_TIERS,
   CHEST_LIFE_MS_MAX,
   CHEST_LIFE_MS_MIN,
   CHEST_VISUALS,
+  ELITE_CHANCE,
+  ELITE_HP_MULT,
+  ELITE_REWARD_MULT,
   ENEMY_TYPES,
   EQUIP_SLOTS,
   HERO_BASE,
@@ -227,15 +234,23 @@ function isSlotCompatibleFn(itemSlot: EquipSlotId | null, targetSlot: EquipSlotI
   return itemSlot === targetSlot;
 }
 
-// Создаёт врага по случайному типу
-function makeEnemy(): BattleEnemy {
+// Создаёт врага по случайному типу. На каждом BOSS_INTERVAL-убийстве спавним
+// босса (5x HP, 5x награда), иначе с шансом ELITE_CHANCE — элитного (2x).
+function makeEnemy(enemiesKilled: number): BattleEnemy {
   const t = pickRandom(ENEMY_TYPES);
+  const isBoss = enemiesKilled > 0 && enemiesKilled % BOSS_INTERVAL === 0;
+  const isElite = !isBoss && Math.random() < ELITE_CHANCE;
+  let hp = t.hp;
+  if (isBoss) hp = Math.round(t.hp * BOSS_HP_MULT);
+  else if (isElite) hp = Math.round(t.hp * ELITE_HP_MULT);
   return {
     id: `enemy-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
     typeId: t.id,
-    hp: t.hp,
-    maxHp: t.hp,
+    hp,
+    maxHp: hp,
     spawnAt: Date.now(),
+    isElite,
+    isBoss,
   };
 }
 
@@ -700,7 +715,7 @@ export const useGameStore = create<GameState>()(
         set({
           battle: {
             ...state.battle,
-            currentEnemy: makeEnemy(),
+            currentEnemy: makeEnemy(state.battle.enemiesKilled),
           },
         });
       },
@@ -712,7 +727,7 @@ export const useGameStore = create<GameState>()(
           set({
             battle: {
               ...state.battle,
-              currentEnemy: makeEnemy(),
+              currentEnemy: makeEnemy(state.battle.enemiesKilled),
               lastAttackAt: now,
             },
           });
@@ -737,11 +752,17 @@ export const useGameStore = create<GameState>()(
           return;
         }
 
-        // враг убит
+        // враг убит — расчёт наград с учётом элиты/босса
         const enemyType = ENEMY_TYPES.find((e) => e.id === enemy.typeId)!;
-        const xpGain = enemyType.xpReward;
-        const moneyGain = randInt(enemyType.moneyReward[0], enemyType.moneyReward[1]);
-        const keyDrop = Math.random() < enemyType.keyDropChance;
+        const rewardMult = enemy.isBoss ? BOSS_REWARD_MULT : enemy.isElite ? ELITE_REWARD_MULT : 1;
+        const xpGain = enemyType.xpReward * rewardMult;
+        const moneyGain = randInt(enemyType.moneyReward[0], enemyType.moneyReward[1]) * rewardMult;
+        // шанс ключа: для босса — BOSS_KEY_DROP_CHANCE, для элиты — 2x базовый, иначе базовый
+        const baseKeyChance = enemyType.keyDropChance;
+        const keyChance = enemy.isBoss ? BOSS_KEY_DROP_CHANCE : enemy.isElite ? baseKeyChance * 2 : baseKeyChance;
+        const keyDrop = Math.random() < keyChance;
+        // тип выпавшего ключа: босс — серебряный, элита — бронзовый, обычный — ржавый
+        const keyRarity: KeyRarity = enemy.isBoss ? "silver" : enemy.isElite ? "bronze" : "rusty";
 
         // leveling
         let level = state.battle.heroLevel;
@@ -756,35 +777,37 @@ export const useGameStore = create<GameState>()(
         }
 
         const newKeys = keyDrop
-          ? { ...state.keys, rusty: state.keys.rusty + 1 }
+          ? { ...state.keys, [keyRarity]: state.keys[keyRarity] + 1 }
           : state.keys;
+
+        const newEnemiesKilled = state.battle.enemiesKilled + 1;
 
         set({
           keys: newKeys,
           money: state.money + moneyGain,
           battle: {
             ...state.battle,
-            currentEnemy: makeEnemy(),
+            currentEnemy: makeEnemy(newEnemiesKilled),
             heroLevel: level,
             heroXp: xp,
             heroXpNext: xpNext,
-            enemiesKilled: state.battle.enemiesKilled + 1,
+            enemiesKilled: newEnemiesKilled,
             lastAttackAt: now,
             lastReward: {
               xp: xpGain,
               money: moneyGain,
               key: keyDrop,
-              enemyName: enemyType.name,
+              enemyName: (enemy.isBoss ? "БОСС " : enemy.isElite ? "ЭЛИТА " : "") + enemyType.name,
             },
           },
           stats: {
             ...state.stats,
-            enemiesKilled: state.battle.enemiesKilled + 1,
+            enemiesKilled: newEnemiesKilled,
             heroLevel: level,
             moneyEarned: state.stats.moneyEarned + moneyGain,
           },
         });
-        void leveled; // (leveled не используется дополнительно)
+        void leveled;
       },
 
       resetGame: () =>

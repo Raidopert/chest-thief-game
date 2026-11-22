@@ -476,6 +476,8 @@ export interface BattleEnemy {
   hp: number;
   maxHp: number;
   spawnAt: number;
+  isElite?: boolean;
+  isBoss?: boolean;
 }
 
 export interface BattleState {
@@ -495,6 +497,17 @@ export const ATTACK_INTERVAL_MIN_MS = 280;
 export function xpForLevel(level: number): number {
   return Math.floor(80 * Math.pow(level, 1.4));
 }
+
+// Боссы появляются каждые N убийств
+export const BOSS_INTERVAL = 25;
+// Шанс элитного врага
+export const ELITE_CHANCE = 0.12;
+// Множители для элиты/босса
+export const ELITE_HP_MULT = 2;
+export const ELITE_REWARD_MULT = 2;
+export const BOSS_HP_MULT = 5;
+export const BOSS_REWARD_MULT = 5;
+export const BOSS_KEY_DROP_CHANCE = 0.5; // босс часто даёт ключ
 
 // ============================================================================
 // ХАРАКТЕРИСТИКИ ПРЕДМЕТОВ

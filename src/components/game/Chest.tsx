@@ -205,6 +205,24 @@ export default function Chest({ chest }: Props) {
             >
               {key.name}
             </div>
+            {/* искры от ключа — разлетаются от замка вверх в цвете ключа */}
+            <div className="absolute inset-0 pointer-events-none overflow-visible">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="absolute left-1/2 top-[35%] rounded-full"
+                  style={{
+                    width: 2 + (i % 2),
+                    height: 2 + (i % 2),
+                    background: key.color,
+                    boxShadow: `0 0 4px ${key.color}`,
+                    animation: `keySpark ${0.8 + i * 0.15}s ease-out ${i * 0.1}s infinite`,
+                    ["--spark-dx" as string]: `${(i - 2) * 14}px`,
+                    ["--spark-dy" as string]: `${-20 - i * 6}px`,
+                  }}
+                />
+              ))}
+            </div>
           </>
         )}
 
@@ -225,6 +243,16 @@ export default function Chest({ chest }: Props) {
         @keyframes chestPulse {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.04); }
+        }
+        @keyframes keySpark {
+          0% {
+            transform: translate(-50%, -50%) translate(0, 0) scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(-50%, -50%) translate(var(--spark-dx, 0), var(--spark-dy, -30px)) scale(0.3);
+            opacity: 0;
+          }
         }
       `}</style>
     </motion.div>

@@ -10,6 +10,8 @@ import Shop from "@/components/game/Shop";
 import LootReveal from "@/components/game/LootReveal";
 import HeroInventory from "@/components/game/HeroInventory";
 import AutoBattle from "@/components/game/AutoBattle";
+import GameTabs from "@/components/game/GameTabs";
+import { SPAWN_INTERVAL_MS } from "@/lib/game/config";
 
 export default function Home() {
   const [shopOpen, setShopOpen] = useState(false);
@@ -22,6 +24,33 @@ export default function Home() {
   const enemiesKilled = useGameStore((s) => s.battle.enemiesKilled);
   const heroLevel = useGameStore((s) => s.battle.heroLevel);
   const resetGame = useGameStore((s) => s.resetGame);
+
+  // Селекторы для циклов (получаем функции один раз)
+  const spawnChestTick = useGameStore((s) => s.spawnChestTick);
+  const pruneChests = useGameStore((s) => s.pruneChests);
+  const battleTick = useGameStore((s) => s.battleTick);
+  const clearLuckIfExpired = useGameStore((s) => s.clearLuckIfExpired);
+
+  // Главные игровые циклы — работают ВСЕГДА, независимо от активной вкладки.
+  // Только так спавн сундуков и авто-бой идут в фоне, пока игрок на другой вкладке.
+  useEffect(() => {
+    const spawn = setInterval(() => spawnChestTick(), SPAWN_INTERVAL_MS);
+    const prune = setInterval(() => pruneChests(Date.now()), 800);
+    const battle = setInterval(() => battleTick(Date.now()), 100);
+    const luck = setInterval(() => clearLuckIfExpired(Date.now()), 1000);
+    // стартовый спавн
+    spawnChestTick();
+    const t1 = setTimeout(() => spawnChestTick(), 500);
+    const t2 = setTimeout(() => spawnChestTick(), 1200);
+    return () => {
+      clearInterval(spawn);
+      clearInterval(prune);
+      clearInterval(battle);
+      clearInterval(luck);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [spawnChestTick, pruneChests, battleTick, clearLuckIfExpired]);
 
   // предотвращаем случайный зум на двойной тап (мобилки)
   useEffect(() => {
@@ -45,21 +74,21 @@ export default function Home() {
 
   return (
     <div
-      className="min-h-screen w-full text-amber-100"
+      className="min-h-screen w-full text-zinc-200"
       style={{
         background:
-          "radial-gradient(ellipse at 50% 0%, #2a1d12 0%, #150e08 50%, #070504 100%)",
+          "radial-gradient(ellipse at 50% 0%, #2a2530 0%, #15131c 50%, #08060a 100%)",
       }}
     >
-      <main className="max-w-7xl mx-auto p-3 md:p-4 space-y-3 md:space-y-4">
+      <main className="max-w-5xl mx-auto p-3 md:p-4 space-y-3 md:space-y-4">
         {/* Заголовок */}
         <header className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-xl md:text-2xl font-black text-amber-300 tracking-tight leading-none">
-              СУНДУЧНЫЙ ВОР
+            <h1 className="text-xl md:text-2xl font-black text-zinc-100 tracking-[0.2em] leading-none uppercase">
+              Сундучный Вор
             </h1>
-            <p className="text-[10px] md:text-[11px] text-amber-200/50 font-mono uppercase tracking-widest">
-              лук · ключи · лут · 1000 предметов · 7 редкостей · герой · авто-бой
+            <p className="text-[10px] md:text-[11px] text-zinc-500 font-mono uppercase tracking-widest mt-1">
+              Тёмное фэнтези · лук · ключи · 1000 реликвий · 7 редкостей
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -69,51 +98,47 @@ export default function Home() {
                   resetGame();
                 }
               }}
-              className="text-[10px] px-2 py-1 rounded border border-red-900/40 text-red-300/70 hover:bg-red-900/20 font-mono"
+              className="text-[10px] px-2 py-1 rounded border border-red-900/50 text-red-400/80 hover:bg-red-950/40 font-mono uppercase tracking-wider"
             >
               сброс
             </button>
           </div>
         </header>
 
-        {/* Панель ресурсов */}
+        {/* Панель ресурсов — всегда видна над вкладками */}
         <ResourceBar onOpenShop={() => setShopOpen(true)} />
 
-        {/* Основная сетка: 3 колонки на десктопе */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px_360px] gap-3 md:gap-4">
-          {/* Левая колонка: кликер-воришка + поле сундуков */}
-          <div className="space-y-3 md:space-y-4">
-            {/* Кликер — левая рука героя душит воришку */}
-            <div className="rounded-2xl border border-amber-900/40 bg-gradient-to-b from-[#1a1208] to-[#0e0a05] p-3 md:p-4 flex flex-col items-center">
-              <div className="w-full flex items-center justify-between mb-2">
-                <div className="text-[10px] uppercase tracking-widest text-amber-200/60 font-mono">
-                  Левая рука — душит воришку
+        {/* Вкладки */}
+        <GameTabs
+          huntTab={
+            <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-3 md:gap-4">
+              {/* Кликер — компактный слева на десктопе */}
+              <div className="rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] p-2 md:p-3 flex flex-col items-center">
+                <div className="w-full flex items-center justify-between mb-1.5">
+                  <div className="text-[9px] uppercase tracking-widest text-zinc-400 font-mono">
+                    Демонический лук
+                  </div>
+                  <div className="text-[9px] text-zinc-500 font-mono">
+                    ~18%
+                  </div>
                 </div>
-                <div className="text-[10px] text-amber-200/40 font-mono">
-                  ~18% ключ / клик
-                </div>
+                <ClickerScene />
               </div>
-              <ClickerScene />
+              {/* Поле сундуков */}
+              <ChestField />
             </div>
-
-            {/* Поле сундуков */}
-            <ChestField />
-          </div>
-
-          {/* Центральная колонка: герой-силуэт с экипировкой */}
-          <div className="lg:h-auto">
-            <HeroInventory />
-          </div>
-
-          {/* Правая колонка: авто-боец (правая рука) + инвентарь лута */}
-          <div className="space-y-3 md:space-y-4">
-            <AutoBattle />
-            <LootInventory />
-          </div>
-        </div>
+          }
+          heroTab={
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+              <HeroInventory />
+              <AutoBattle />
+            </div>
+          }
+          lootTab={<LootInventory />}
+        />
 
         {/* Статистика */}
-        <footer className="rounded-2xl border border-amber-900/40 bg-[#150e08]/80 p-3 grid grid-cols-2 md:grid-cols-6 gap-2 text-center">
+        <footer className="rounded-2xl border border-zinc-700 bg-[#0f0d15]/80 p-3 grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
           <Stat label="Кликов" value={totalClicks} />
           <Stat label="Сундуков" value={chestsOpened} />
           <Stat label="Лута" value={itemsFound} />
@@ -122,12 +147,12 @@ export default function Home() {
           <Stat
             label="Лучшая редкость"
             value={bestRarityFound ?? "—"}
-            color={bestRarityFound ? undefined : "#9ca3af"}
+            color={bestRarityFound ? undefined : "#64748b"}
           />
         </footer>
 
-        <div className="text-[10px] text-amber-200/40 font-mono text-center pb-2">
-          Левая рука = душить воришку кликом · Правая рука = авто-бьёт врагов · Сундук = удержание ключом · Лут = клик для продажи или «надеть» · Герой = клик по ячейке
+        <div className="text-[10px] text-zinc-600 font-mono text-center pb-2 uppercase tracking-wider">
+          Левая рука = кликер · Правая = авто-бой · Сундук = удержание ключом · Лут = продать/надеть
         </div>
       </main>
 
@@ -141,10 +166,10 @@ function Stat({ label, value, color }: { label: string; value: number | string; 
   const numStr = typeof value === "number" ? value.toLocaleString("ru-RU") : value;
   return (
     <div>
-      <div className="text-[9px] uppercase tracking-widest text-amber-200/50 font-mono">
+      <div className="text-[9px] uppercase tracking-widest text-zinc-500 font-mono">
         {label}
       </div>
-      <div className="text-amber-300 font-bold text-sm font-mono" style={color ? { color } : undefined}>
+      <div className="text-zinc-200 font-bold text-sm font-mono" style={color ? { color } : undefined}>
         {numStr}
       </div>
     </div>

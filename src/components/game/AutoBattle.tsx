@@ -30,7 +30,6 @@ function computeStats(equipped: Record<string, { stats: ItemStats } | undefined>
 
 export default function AutoBattle() {
   const battle = useGameStore((s) => s.battle);
-  const battleTick = useGameStore((s) => s.battleTick);
   const equipped = useGameStore((s) => s.equipped);
   const equippedRight = equipped.rightHand;
   const heroStats = useMemo(
@@ -42,39 +41,28 @@ export default function AutoBattle() {
     ATTACK_INTERVAL_BASE_MS - heroStats.speed * 25 - (battle.heroLevel - 1) * 12,
   );
 
-  const [now, setNow] = useState(Date.now());
   const [attackAnim, setAttackAnim] = useState(0); // 0..1, 0 = idle
   const [hitFlash, setHitFlash] = useState(false);
 
-  // основной цикл боя — каждые 60мс тикаем
-  useEffect(() => {
-    let raf: number;
-    const tickFn = () => {
-      const n = Date.now();
-      setNow(n);
-      battleTick(n);
-      raf = requestAnimationFrame(tickFn);
-    };
-    raf = requestAnimationFrame(tickFn);
-    return () => cancelAnimationFrame(raf);
-  }, [battleTick]);
-
-  // анимация удара — синхронизирована с интервалом атаки
+  // Анимация удара — синхронизирована с изменением lastAttackAt в store.
+  // Сами тики боя идут в page.tsx (setInterval), чтобы бой работал
+  // даже когда вкладка "Герой" не активна.
   const lastAttackAt = battle.lastAttackAt;
   useEffect(() => {
     if (!lastAttackAt) return;
-    // запускаем короткую анимацию
-    setAttackAnim(1);
-    setHitFlash(true);
+    // запускаем анимацию в rAF, чтобы не синхронно в теле эффекта
+    const raf = requestAnimationFrame(() => {
+      setAttackAnim(1);
+      setHitFlash(true);
+    });
     const t1 = setTimeout(() => setAttackAnim(0), 200);
     const t2 = setTimeout(() => setHitFlash(false), 150);
     return () => {
+      cancelAnimationFrame(raf);
       clearTimeout(t1);
       clearTimeout(t2);
     };
   }, [lastAttackAt]);
-
-  void now; // now используется для перерисовки в RAF
 
   const currentEnemyType = battle.currentEnemy
     ? ENEMY_TYPES.find((e) => e.id === battle.currentEnemy!.typeId)
@@ -88,31 +76,50 @@ export default function AutoBattle() {
   const weaponEmoji = equippedRight?.emoji ?? "✊";
 
   return (
-    <div className="rounded-2xl border border-amber-900/40 bg-gradient-to-b from-[#1a1208] to-[#0e0a05] p-3 md:p-4">
+    <div className="rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] p-3 md:p-4">
       <div className="flex items-center justify-between mb-2">
-        <div className="text-[10px] uppercase tracking-widest text-amber-200/60 font-mono">
+        <div className="text-[10px] uppercase tracking-widest text-zinc-400 font-mono">
           Авто-боец (правая рука)
         </div>
-        <div className="text-[10px] text-amber-200/40 font-mono">
+        <div className="text-[10px] text-zinc-500 font-mono">
           {interval}мс / удар
         </div>
       </div>
 
-      {/* Сцена боя */}
+      {/* Сцена боя — каменная арена склепа */}
       <div
-        className="relative w-full rounded-xl overflow-hidden border border-amber-900/30"
+        className="relative w-full rounded-xl overflow-hidden border border-zinc-700"
         style={{
           aspectRatio: "1 / 1",
           background:
-            "radial-gradient(ellipse at 70% 50%, #2a1d12 0%, #150e08 60%, #070504 100%)",
+            "radial-gradient(ellipse at 30% 50%, #2a2530 0%, #15131c 60%, #08060a 100%)",
         }}
       >
-        {/* битая земля */}
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200">
-          <ellipse cx="100" cy="195" rx="80" ry="6" fill="rgba(0,0,0,0.6)" />
-          {/* пятна крови/травы */}
-          <ellipse cx="40" cy="190" rx="20" ry="3" fill="rgba(120,30,30,0.3)" />
-          <ellipse cx="160" cy="188" rx="25" ry="3" fill="rgba(60,80,30,0.3)" />
+        {/* каменная арена — булыжники и решётка */}
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="none">
+          {/* решётка окна слева */}
+          <g opacity="0.4">
+            <rect x="5" y="20" width="30" height="50" fill="#0a0a0f" stroke="#3f3f46" strokeWidth="1" />
+            <line x1="20" y1="20" x2="20" y2="70" stroke="#3f3f46" strokeWidth="0.8" />
+            <line x1="5" y1="45" x2="35" y2="45" stroke="#3f3f46" strokeWidth="0.8" />
+          </g>
+          {/* булыжники */}
+          {[
+            { cx: 30, cy: 195, rx: 15, ry: 4 },
+            { cx: 100, cy: 196, rx: 30, ry: 5 },
+            { cx: 170, cy: 195, rx: 20, ry: 4 },
+          ].map((e, i) => (
+            <ellipse key={i} cx={e.cx} cy={e.cy} rx={e.rx} ry={e.ry} fill="#0a0a0f" />
+          ))}
+          {/* пятна крови */}
+          <ellipse cx="50" cy="190" rx="15" ry="3" fill="rgba(120,30,30,0.4)" />
+          <ellipse cx="140" cy="188" rx="18" ry="3" fill="rgba(120,30,30,0.5)" />
+          {/* череп */}
+          <g transform="translate(110, 192) scale(0.7)" opacity="0.6">
+            <ellipse cx="0" cy="0" rx="6" ry="4" fill="#e7e5e4" />
+            <ellipse cx="-2" cy="-1" rx="1" ry="1.5" fill="#0a0a0f" />
+            <ellipse cx="2" cy="-1" rx="1" ry="1.5" fill="#0a0a0f" />
+          </g>
         </svg>
 
         {/* рука героя с мечом — справа, от плеча до кисти */}
@@ -127,40 +134,59 @@ export default function AutoBattle() {
             transition={{ duration: 0.18 }}
             style={{ transformOrigin: "90px 30px" }}
           >
-            {/* плечо */}
-            <ellipse cx="90" cy="30" rx="14" ry="14" fill="#3a2a18" stroke="#5b3a1a" strokeWidth="1.5" />
-            {/* доспех на плече */}
-            <ellipse cx="90" cy="28" rx="12" ry="10" fill="#5b3a1a" stroke="#3a2a18" strokeWidth="1" />
-            {/* рука — бицепс+предплечье */}
+            {/* латное плечо — наплечник с шипами */}
+            <ellipse cx="90" cy="30" rx="16" ry="15" fill="#2a2a35" stroke="#0a0a0f" strokeWidth="1.5" />
+            <ellipse cx="90" cy="28" rx="13" ry="11" fill="#3a3a45" stroke="#0a0a0f" strokeWidth="1" />
+            {/* шип на наплечнике */}
+            <path d="M 90 13 L 93 22 L 87 22 Z" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="0.8" />
+            {/* заклёпки */}
+            <circle cx="84" cy="32" r="1.2" fill="#71717a" />
+            <circle cx="96" cy="32" r="1.2" fill="#71717a" />
+
+            {/* рука — латный бицепс+предплечье с сегментами */}
             <path
               d="M 88 38 Q 80 60 75 90 Q 70 120 72 150 Q 80 158 88 150 Q 92 120 90 90 Q 95 60 96 40 Z"
-              fill="#3a2a18"
-              stroke="#5b3a1a"
+              fill="#3a3a45"
+              stroke="#0a0a0f"
               strokeWidth="1.5"
             />
-            {/* кисть */}
-            <ellipse cx="80" cy="155" rx="7" ry="8" fill="#3a2a18" stroke="#5b3a1a" strokeWidth="1.5" />
+            {/* локтевой сегмент */}
+            <ellipse cx="74" cy="90" rx="6" ry="5" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="1" />
+            {/* предплечье — латная трубка с ребрами */}
+            <path d="M 71 110 L 71 140 M 76 110 L 76 140 M 80 110 L 80 140" stroke="#1c1c25" strokeWidth="0.6" />
 
-            {/* оружие в руке — меч по умолчанию */}
+            {/* кисть — латная перчатка */}
+            <ellipse cx="80" cy="155" rx="8" ry="9" fill="#2a2a35" stroke="#0a0a0f" strokeWidth="1.5" />
+            {/* суставы пальцев */}
+            <circle cx="76" cy="158" r="1.5" fill="#1c1c25" />
+            <circle cx="80" cy="160" r="1.5" fill="#1c1c25" />
+            <circle cx="84" cy="158" r="1.5" fill="#1c1c25" />
+
+            {/* оружие в руке — готический меч */}
             {equippedRight ? (
               <>
-                {/* рукоять */}
-                <rect x="78" y="155" width="4" height="14" fill="#5b3a1a" transform="rotate(15 80 162)" />
-                {/* гарда */}
-                <rect x="71" y="167" width="18" height="3" fill="#a06a2e" transform="rotate(15 80 168)" />
-                {/* клинок — направлен вверх-влево от кисти */}
+                {/* рукоять — обмотана тёмной кожей */}
+                <rect x="78" y="155" width="5" height="14" fill="#3a2a18" stroke="#0a0a0f" strokeWidth="0.5" transform="rotate(15 80 162)" />
+                <path d="M 78 158 L 82 162 M 78 162 L 82 166" stroke="#1a1208" strokeWidth="0.6" transform="rotate(15 80 162)" />
+                {/* гарда — крестовина */}
+                <path d="M 65 167 L 95 167 L 95 171 L 65 171 Z" fill="#71717a" stroke="#0a0a0f" strokeWidth="0.8" transform="rotate(15 80 168)" />
+                {/* клинок — широкий с кровостоком */}
                 <motion.path
                   d="M 80 168 L 35 110 L 38 105 L 83 163 Z"
-                  fill="#d1d5db"
-                  stroke="#9ca3af"
+                  fill="#cbd5e1"
+                  stroke="#94a3b8"
                   strokeWidth="1"
                 />
                 {/* блик на клинке */}
                 <path d="M 75 165 L 40 115 L 42 113 L 77 163 Z" fill="#e5e7eb" />
+                {/* кровосток */}
+                <path d="M 80 168 L 40 117" stroke="#71717a" strokeWidth="0.6" fill="none" />
+                {/* капля крови на кончике */}
+                <circle cx="36" cy="108" r="1.5" fill="#dc2626" opacity="0.85" />
               </>
             ) : (
-              // кулак без оружия
-              <ellipse cx="80" cy="158" rx="9" ry="9" fill="#3a2a18" stroke="#5b3a1a" strokeWidth="2" />
+              // латный кулак без оружия
+              <ellipse cx="80" cy="158" rx="10" ry="10" fill="#2a2a35" stroke="#0a0a0f" strokeWidth="2" />
             )}
           </motion.svg>
         </div>
@@ -192,7 +218,7 @@ export default function AutoBattle() {
                   {currentEnemyType.name}
                 </div>
                 {/* HP bar врага */}
-                <div className="w-24 h-2 bg-black/60 rounded-full overflow-hidden mt-1 border border-amber-900/40">
+                <div className="w-24 h-2 bg-black/60 rounded-full overflow-hidden mt-1 border border-zinc-700">
                   <motion.div
                     className="h-full"
                     style={{ background: currentEnemyType.color }}
@@ -200,7 +226,7 @@ export default function AutoBattle() {
                     transition={{ duration: 0.1 }}
                   />
                 </div>
-                <div className="text-[9px] text-amber-200/60 font-mono mt-0.5">
+                <div className="text-[9px] text-zinc-400 font-mono mt-0.5">
                   {enemyHp}/{enemyMaxHp}
                 </div>
               </motion.div>
@@ -224,10 +250,10 @@ export default function AutoBattle() {
         </AnimatePresence>
 
         {/* надпись авто-боя */}
-        <div className="absolute top-2 left-2 text-[9px] uppercase tracking-widest text-amber-200/40 font-mono">
+        <div className="absolute top-2 left-2 text-[9px] uppercase tracking-widest text-zinc-500 font-mono">
           AUTO
         </div>
-        <div className="absolute bottom-2 right-2 text-[9px] text-amber-200/40 font-mono">
+        <div className="absolute bottom-2 right-2 text-[9px] text-zinc-500 font-mono">
           {battle.enemiesKilled} убито
         </div>
       </div>
@@ -237,16 +263,16 @@ export default function AutoBattle() {
         {/* Уровень + XP бар */}
         <div>
           <div className="flex items-center justify-between text-[10px] font-mono mb-1">
-            <span className="text-amber-300 font-bold">
+            <span className="text-zinc-200 font-bold">
               Уровень {battle.heroLevel}
             </span>
-            <span className="text-amber-200/50">
+            <span className="text-zinc-500">
               {battle.heroXp}/{battle.heroXpNext} XP
             </span>
           </div>
-          <div className="h-2 bg-black/60 rounded-full overflow-hidden border border-amber-900/30">
+          <div className="h-2 bg-black/60 rounded-full overflow-hidden border border-zinc-700/50">
             <motion.div
-              className="h-full bg-gradient-to-r from-amber-700 to-amber-400"
+              className="h-full bg-gradient-to-r from-red-800 to-red-500"
               animate={{ width: `${xpPct}%` }}
               transition={{ duration: 0.3 }}
             />
@@ -257,19 +283,19 @@ export default function AutoBattle() {
         <div className="grid grid-cols-4 gap-1 text-center text-[10px] font-mono">
           <div className="rounded bg-black/30 py-1 border border-red-900/30">
             <div className="text-red-400">⚔ АТК</div>
-            <div className="text-amber-100 font-bold">{heroStats.attack}</div>
+            <div className="text-zinc-200 font-bold">{heroStats.attack}</div>
           </div>
           <div className="rounded bg-black/30 py-1 border border-blue-900/30">
             <div className="text-blue-400">🛡 ЗАЩ</div>
-            <div className="text-amber-100 font-bold">{heroStats.defense}</div>
+            <div className="text-zinc-200 font-bold">{heroStats.defense}</div>
           </div>
           <div className="rounded bg-black/30 py-1 border border-green-900/30">
             <div className="text-green-400">💨 СКОР</div>
-            <div className="text-amber-100 font-bold">{heroStats.speed}</div>
+            <div className="text-zinc-200 font-bold">{heroStats.speed}</div>
           </div>
-          <div className="rounded bg-black/30 py-1 border border-amber-700/30">
-            <div className="text-amber-400">🍀 УДЧ</div>
-            <div className="text-amber-100 font-bold">{heroStats.luck}</div>
+          <div className="rounded bg-black/30 py-1 border border-yellow-700/30">
+            <div className="text-yellow-400">🍀 УДЧ</div>
+            <div className="text-zinc-200 font-bold">{heroStats.luck}</div>
           </div>
         </div>
 
@@ -284,9 +310,9 @@ export default function AutoBattle() {
               className="text-[10px] font-mono flex items-center justify-center gap-3 py-1 rounded bg-emerald-900/20 border border-emerald-900/30"
             >
               <span className="text-emerald-300">+{battle.lastReward.xp} XP</span>
-              <span className="text-amber-300">+{battle.lastReward.money}💰</span>
+              <span className="text-yellow-400">+{battle.lastReward.money}💰</span>
               {battle.lastReward.key && <span className="text-zinc-300">+1 🗝</span>}
-              <span className="text-amber-200/50">за {battle.lastReward.enemyName}</span>
+              <span className="text-zinc-500">за {battle.lastReward.enemyName}</span>
             </motion.div>
           )}
         </AnimatePresence>

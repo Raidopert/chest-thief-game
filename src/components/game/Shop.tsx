@@ -26,25 +26,25 @@ export default function Shop({ open, onClose }: Props) {
       onClick={onClose}
     >
       <motion.div
-        className="w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-2xl border-2 border-amber-700/50 bg-gradient-to-b from-[#231811] to-[#150e08] shadow-2xl"
+        className="w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-2xl border-2 border-red-800/50 bg-gradient-to-b from-[#1c1c25] to-[#08060a] shadow-2xl"
         initial={{ scale: 0.92, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.92, y: 20 }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* шапка */}
-        <div className="p-4 border-b border-amber-900/40 flex items-center justify-between sticky top-0 bg-[#1a1208]/95 backdrop-blur z-10">
+        <div className="p-4 border-b border-zinc-700 flex items-center justify-between sticky top-0 bg-[#15131c]/95 backdrop-blur z-10">
           <div>
             <h2 className="text-amber-300 font-bold text-lg flex items-center gap-2">
               🛒 Лавка вора
             </h2>
-            <p className="text-[11px] text-amber-200/60 font-mono">
+            <p className="text-[11px] text-zinc-400 font-mono">
               В кошельке: <span className="text-amber-300 font-bold">{money.toLocaleString("ru-RU")}💰</span>
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-amber-900/50 hover:bg-amber-800 text-amber-200 text-xl flex items-center justify-center"
+            className="w-9 h-9 rounded-full bg-red-950/50 hover:bg-red-900 text-zinc-300 text-xl flex items-center justify-center"
             aria-label="Закрыть"
           >
             ×
@@ -54,7 +54,7 @@ export default function Shop({ open, onClose }: Props) {
         <div className="p-4 space-y-4">
           {/* Редкие ключи */}
           <section>
-            <h3 className="text-[11px] uppercase tracking-widest text-amber-200/70 font-mono mb-2 flex items-center gap-2">
+            <h3 className="text-[11px] uppercase tracking-widest text-red-400/80 font-mono mb-2 flex items-center gap-2">
               🔑 Редкие ключи
             </h3>
             <div className="space-y-2">
@@ -73,7 +73,7 @@ export default function Shop({ open, onClose }: Props) {
                       <div className="text-sm font-bold" style={{ color: k.color }}>
                         {k.name}
                       </div>
-                      <div className="text-[10px] text-amber-200/60 font-mono">
+                      <div className="text-[10px] text-zinc-400 font-mono">
                         качество +{Math.round(k.qualityBoost * 100)}% · удержание {k.holdTimeMs}мс
                       </div>
                     </div>
@@ -82,7 +82,7 @@ export default function Shop({ open, onClose }: Props) {
                       disabled={!canBuy}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                         canBuy
-                          ? "bg-amber-700 hover:bg-amber-600 text-amber-100"
+                          ? "bg-red-800 hover:bg-red-700 text-zinc-200"
                           : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
                       }`}
                     >
@@ -92,14 +92,14 @@ export default function Shop({ open, onClose }: Props) {
                 );
               })}
             </div>
-            <p className="text-[10px] text-amber-200/40 mt-2 italic">
+            <p className="text-[10px] text-zinc-500 mt-2 italic">
               Золотой и серебряный ключи очень редко выпадают из кликера. Здесь — за деньги.
             </p>
           </section>
 
           {/* Бустеры удачи */}
           <section>
-            <h3 className="text-[11px] uppercase tracking-widest text-amber-200/70 font-mono mb-2 flex items-center gap-2">
+            <h3 className="text-[11px] uppercase tracking-widest text-red-400/80 font-mono mb-2 flex items-center gap-2">
               🍀 Временные бусты удачи
             </h3>
             {luckBoost && (
@@ -120,7 +120,7 @@ export default function Shop({ open, onClose }: Props) {
                       <div className="text-sm font-bold text-emerald-200">
                         {b.name}
                       </div>
-                      <div className="text-[10px] text-amber-200/60">
+                      <div className="text-[10px] text-zinc-400">
                         {b.description}
                       </div>
                     </div>
@@ -142,7 +142,7 @@ export default function Shop({ open, onClose }: Props) {
           </section>
 
           {/* подсказка */}
-          <div className="text-[10px] text-amber-200/50 italic border-t border-amber-900/30 pt-3">
+          <div className="text-[10px] text-zinc-500 italic border-t border-zinc-700/40 pt-3">
             Деньги — продажа лута из инвентаря справа. Клик по предмету = продажа.
           </div>
         </div>

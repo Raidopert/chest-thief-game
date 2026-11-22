@@ -52,14 +52,14 @@ export default function LootInventory() {
   const filteredGrouped = filter === "all" ? grouped : new Map([[filter, grouped.get(filter) ?? []]]);
 
   return (
-    <div className="flex flex-col h-full rounded-2xl border border-amber-900/40 bg-gradient-to-b from-[#1f1610] to-[#150e08] overflow-hidden">
+    <div className="flex flex-col h-full rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] overflow-hidden">
       {/* шапка */}
-      <div className="p-3 border-b border-amber-900/40 flex items-center justify-between">
+      <div className="p-3 border-b border-zinc-700 flex items-center justify-between">
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-amber-200/60 font-mono">
+          <div className="text-[10px] uppercase tracking-widest text-zinc-400 font-mono">
             Кошель воришки
           </div>
-          <div className="text-amber-300 font-bold text-sm">
+          <div className="text-zinc-200 font-bold text-sm">
             {totalCount} шт · {totalValue.toLocaleString("ru-RU")} 💰
           </div>
         </div>
@@ -76,13 +76,13 @@ export default function LootInventory() {
       </div>
 
       {/* фильтр */}
-      <div className="px-2 py-2 border-b border-amber-900/40 flex flex-wrap gap-1">
+      <div className="px-2 py-2 border-b border-zinc-700 flex flex-wrap gap-1">
         <button
           onClick={() => setFilter("all")}
           className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
             filter === "all"
-              ? "bg-amber-200 text-black"
-              : "text-amber-200/60 hover:bg-amber-900/30"
+              ? "bg-zinc-200 text-black"
+              : "text-zinc-400 hover:bg-red-950/40"
           }`}
         >
           все
@@ -110,7 +110,7 @@ export default function LootInventory() {
       {/* список */}
       <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-[200px]" style={{ maxHeight: "calc(100vh - 360px)" }}>
         {inventory.length === 0 && (
-          <div className="text-center text-amber-200/40 text-xs py-12">
+          <div className="text-center text-zinc-500 text-xs py-12">
             Пока пусто. Открой сундук, чтобы собрать лут.
           </div>
         )}
@@ -127,7 +127,7 @@ export default function LootInventory() {
                   <span className="text-[11px] font-bold" style={{ color: r.color }}>
                     {r.name}
                   </span>
-                  <span className="text-[10px] text-amber-200/40 font-mono">
+                  <span className="text-[10px] text-zinc-500 font-mono">
                     ({stacks.length})
                   </span>
                 </div>
@@ -160,14 +160,14 @@ export default function LootInventory() {
                             {st.emoji}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <div className="text-[10px] leading-tight text-amber-100 truncate font-medium">
+                            <div className="text-[10px] leading-tight text-zinc-200 truncate font-medium">
                               {st.name}
                             </div>
                             <div className="text-[10px] font-mono leading-tight" style={{ color: r.color }}>
                               ×{st.count} · {(st.baseValue * st.count).toLocaleString("ru-RU")}💰
                             </div>
                             {canEquip && (
-                              <div className="text-[9px] font-mono leading-tight text-amber-200/60 mt-0.5">
+                              <div className="text-[9px] font-mono leading-tight text-zinc-400 mt-0.5">
                                 {formatStats(st.stats)}
                               </div>
                             )}
@@ -210,7 +210,7 @@ export default function LootInventory() {
               border: `1px solid ${RARITY_BY_ID[lastDrop.rarity].color}`,
             }}
           >
-            <div className="text-[9px] uppercase tracking-widest text-amber-200/60 font-mono">
+            <div className="text-[9px] uppercase tracking-widest text-zinc-400 font-mono">
               Последний лут
             </div>
             <div className="flex items-center gap-2">
@@ -218,7 +218,7 @@ export default function LootInventory() {
                 {lastDrop.emoji}
               </span>
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-bold text-amber-100 truncate">
+                <div className="text-xs font-bold text-zinc-200 truncate">
                   {lastDrop.name}
                 </div>
                 <div className="text-[10px] font-mono" style={{ color: RARITY_BY_ID[lastDrop.rarity].color }}>
@@ -264,7 +264,7 @@ function EquipButton({ stackUid, itemSlot }: { stackUid: string; itemSlot: Equip
   return (
     <button
       onClick={() => equipItem(stackUid, firstFree.id)}
-      className="flex-1 text-[9px] py-0.5 rounded font-mono bg-amber-900/40 hover:bg-amber-700/60 text-amber-200 transition-colors"
+      className="flex-1 text-[9px] py-0.5 rounded font-mono bg-red-950/40 hover:bg-red-800/60 text-zinc-300 transition-colors"
       title={`Надеть в слот: ${firstFree.name}`}
     >
       надеть

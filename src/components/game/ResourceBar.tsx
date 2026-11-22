@@ -31,16 +31,16 @@ export default function ResourceBar({ onOpenShop }: Props) {
   const luckSeconds = Math.floor((luckRemaining % 60000) / 1000);
 
   return (
-    <div className="w-full rounded-2xl border border-amber-900/40 bg-gradient-to-b from-[#1f1610] to-[#150e08] p-3 shadow-lg">
+    <div className="w-full rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] p-3 shadow-lg">
       <div className="flex flex-wrap items-center gap-3 justify-between">
         {/* Деньги */}
         <div className="flex items-center gap-2">
           <span className="text-2xl">💰</span>
           <div className="flex flex-col">
-            <span className="text-[10px] uppercase tracking-wider text-amber-200/60 font-mono">
+            <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-mono">
               Монеты
             </span>
-            <span className="font-bold text-amber-300 font-mono text-lg leading-none">
+            <span className="font-bold text-zinc-200 font-mono text-lg leading-none">
               {money.toLocaleString("ru-RU")}
             </span>
           </div>
@@ -50,7 +50,7 @@ export default function ResourceBar({ onOpenShop }: Props) {
         <div className="flex items-center gap-2">
           <span className="text-2xl">🍀</span>
           <div className="flex flex-col">
-            <span className="text-[10px] uppercase tracking-wider text-amber-200/60 font-mono">
+            <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-mono">
               Удача
             </span>
             {luckBoost && luckRemaining > 0 ? (
@@ -68,15 +68,15 @@ export default function ResourceBar({ onOpenShop }: Props) {
         {/* Кнопка магазина */}
         <button
           onClick={onOpenShop}
-          className="px-4 py-2 rounded-xl bg-gradient-to-b from-amber-700 to-amber-900 text-amber-100 font-bold text-sm hover:from-amber-600 hover:to-amber-800 transition-colors border border-amber-500/40 shadow-md"
+          className="px-4 py-2 rounded-xl bg-gradient-to-b from-red-800 to-red-950 text-zinc-200 font-bold text-sm hover:from-red-700 hover:to-red-900 transition-colors border border-red-700/50 shadow-md"
         >
           🛒 Магазин
         </button>
       </div>
 
       {/* Выбор ключа */}
-      <div className="mt-3 pt-3 border-t border-amber-900/40">
-        <div className="text-[10px] uppercase tracking-wider text-amber-200/60 font-mono mb-2">
+      <div className="mt-3 pt-3 border-t border-zinc-700">
+        <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-mono mb-2">
           Активный ключ (зажать на сундуке):
         </div>
         <div className="grid grid-cols-5 gap-1.5">
@@ -111,7 +111,7 @@ export default function ResourceBar({ onOpenShop }: Props) {
                 >
                   ×{count}
                 </span>
-                <span className="text-[8px] text-amber-200/50 uppercase tracking-wider leading-none">
+                <span className="text-[8px] text-zinc-500 uppercase tracking-wider leading-none">
                   {k.name.split(" ")[0]}
                 </span>
                 {/* индикатор качества */}

@@ -216,17 +216,18 @@ export interface ChestVisual {
 }
 
 // Внешний вид сундука. НЕ коррелирует напрямую со скрытым качеством (игрок не знает)
+// Готическая тема: 10 видов в стиле Dark Fantasy (Diablo/Bloodborne)
 export const CHEST_VISUALS: ChestVisual[] = [
-  { id: "wooden",    name: "Деревянный",  color: "#8b5a2b", accent: "#d9a066", sizeRange: [70, 100], baseEmoji: "📦" },
-  { id: "iron",      name: "Железный",    color: "#52525b", accent: "#a1a1aa", sizeRange: [80, 110], baseEmoji: "🗄" },
-  { id: "mossy",     name: "Замшелый",    color: "#3f6212", accent: "#84cc16", sizeRange: [70, 105], baseEmoji: "🪵" },
-  { id: "steel",     name: "Стальной",    color: "#475569", accent: "#cbd5e1", sizeRange: [85, 115], baseEmoji: "🧰" },
-  { id: "silver",    name: "Серебряный",  color: "#64748b", accent: "#f1f5f9", sizeRange: [90, 120], baseEmoji: "🥈" },
-  { id: "golden",    name: "Золотой",     color: "#b45309", accent: "#fde047", sizeRange: [95, 125], baseEmoji: "💼" },
-  { id: "crimson",   name: "Багровый",    color: "#7f1d1d", accent: "#f87171", sizeRange: [85, 115], baseEmoji: "🩸" },
-  { id: "shadow",    name: "Теневой",     color: "#1e1b29", accent: "#7c3aed", sizeRange: [80, 120], baseEmoji: "🌑" },
-  { id: "azure",     name: "Лазурный",    color: "#1e3a8a", accent: "#38bdf8", sizeRange: [90, 120], baseEmoji: "🧊" },
-  { id: "celestial", name: "Небесный",    color: "#581c87", accent: "#fbbf24", sizeRange: [100, 130], baseEmoji: "✨" },
+  { id: "wooden",    name: "Гнилой",        color: "#3d2817", accent: "#7a5a3a", sizeRange: [70, 100], baseEmoji: "⚰" },
+  { id: "iron",      name: "Окованный",     color: "#27272a", accent: "#71717a", sizeRange: [80, 110], baseEmoji: "⛓" },
+  { id: "mossy",     name: "Чумной",        color: "#365314", accent: "#84cc16", sizeRange: [70, 105], baseEmoji: "☣" },
+  { id: "steel",     name: "Могильный",     color: "#3f3f46", accent: "#a1a1aa", sizeRange: [85, 115], baseEmoji: "🪦" },
+  { id: "silver",    name: "Инквизиторский",color: "#4b5563", accent: "#e5e7eb", sizeRange: [90, 120], baseEmoji: "✝" },
+  { id: "golden",    name: "Реликварий",    color: "#854d0e", accent: "#fbbf24", sizeRange: [95, 125], baseEmoji: "⛪" },
+  { id: "crimson",   name: "Кровавый",      color: "#7f1d1d", accent: "#dc2626", sizeRange: [85, 115], baseEmoji: "🩸" },
+  { id: "shadow",    name: "Проклятый",     color: "#18181b", accent: "#7c3aed", sizeRange: [80, 120], baseEmoji: "👁" },
+  { id: "azure",     name: "Ледяной",       color: "#0c4a6e", accent: "#38bdf8", sizeRange: [90, 120], baseEmoji: "❄" },
+  { id: "celestial", name: "Адский",        color: "#450a0a", accent: "#f97316", sizeRange: [100, 130], baseEmoji: "🔥" },
 ];
 
 // Скрытое качество сундука (1-7) — игрок не видит, влияет на редкость лута
@@ -422,11 +423,11 @@ export interface EnemyType {
   color: string;
 }
 
-// 4 типа врагов — появляются поочерёдно
+// 4 типа врагов — готическая тема Dark Fantasy, появляются поочерёдно
 export const ENEMY_TYPES: EnemyType[] = [
   {
-    id: "corpse",
-    name: "Труп",
+    id: "plague",
+    name: "Чумной мертвец",
     emoji: "🧟",
     hp: 18,
     xpReward: 3,
@@ -436,7 +437,7 @@ export const ENEMY_TYPES: EnemyType[] = [
   },
   {
     id: "skeleton",
-    name: "Скелет",
+    name: "Скелет-воин",
     emoji: "💀",
     hp: 26,
     xpReward: 5,
@@ -445,24 +446,24 @@ export const ENEMY_TYPES: EnemyType[] = [
     color: "#e5e7eb",
   },
   {
-    id: "orc",
-    name: "Орк",
+    id: "gargoyle",
+    name: "Горгулья",
     emoji: "👹",
     hp: 42,
     xpReward: 9,
     moneyReward: [4, 12],
     keyDropChance: 0.04,
-    color: "#16a34a",
+    color: "#71717a",
   },
   {
-    id: "spirit",
-    name: "Дух",
-    emoji: "👻",
+    id: "demon",
+    name: "Демон",
+    emoji: "👿",
     hp: 60,
     xpReward: 14,
     moneyReward: [8, 20],
     keyDropChance: 0.06,
-    color: "#67e8f9",
+    color: "#dc2626",
   },
 ];
 
@@ -513,4 +514,33 @@ export const RARITY_STAT_MULT: Record<RarityId, number> = {
   mythic: 65,
   divine: 150,
 };
+
+// ============================================================================
+// ГОТИЧЕСКАЯ UI-ПАЛИТРА (Dark Fantasy — Diablo/Bloodborne)
+// ============================================================================
+export const GOTHIC_UI = {
+  // фоны
+  bgDeep:    "#0a0a0f",   // почти чёрный с синевой
+  bgStone:   "#15151c",   // тёмный камень
+  bgCard:    "#1c1c25",   // карточка
+  bgCardHi:  "#252531",   // подсветка карточки
+  // текст
+  textPri:   "#cbd5e1",   // серебристый основной
+  textSec:   "#94a3b8",   // приглушённый
+  textMute:  "#64748b",   // совсем тусклый
+  // акценты
+  blood:     "#dc2626",   // кровь (главный акцент)
+  bloodDark: "#7f1d1d",
+  silver:    "#cbd5e1",   // серебро
+  gold:      "#d97706",   // реликвное золото
+  goldLight: "#fbbf24",
+  rust:      "#854d0e",   // ржавчина
+  bone:      "#e7e5e4",   // кость
+  // бордюры
+  border:    "#3f3f46",
+  borderHi:  "#71717a",
+  // свечение
+  glow:      "rgba(220,38,38,0.5)",
+} as const;
+
 

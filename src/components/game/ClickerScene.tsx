@@ -59,7 +59,7 @@ export default function ClickerScene() {
       }, 3500);
     } else {
       const fid = ++floatCounter;
-      const msgs = ["клик!", "хрясь!", "щёлк!", "уф!", "тугo!"];
+      const msgs = ["хрясь!", "кровь!", "душу!", "сила!", "ключ!"];
       setFloats((prev) => [
         ...prev,
         {
@@ -84,184 +84,277 @@ export default function ClickerScene() {
       <button
         onClick={handleClick}
         aria-label="Душить воришку кликом — добыть ключи"
-        className="relative rounded-2xl overflow-hidden border-2 border-amber-900/60 shadow-[0_0_30px_rgba(180,83,9,0.45)] select-none touch-manipulation active:scale-[0.98] transition-transform cursor-pointer"
-        style={{ width: "100%", maxWidth: 420, aspectRatio: "1 / 1" }}
+        className="relative rounded-2xl overflow-hidden border-2 border-zinc-700 shadow-[0_0_30px_rgba(220,38,38,0.35)] select-none touch-manipulation active:scale-[0.98] transition-transform cursor-pointer"
+        style={{ width: "100%", maxWidth: 280, aspectRatio: "1 / 1" }}
       >
-        {/* фон — тёмный переулок */}
+        {/* фон — готический склеп */}
         <svg
           viewBox="0 0 400 400"
           className="w-full h-full block"
           style={{ transform: vibrate ? "translateX(2px)" : "translateX(0)" }}
         >
           <defs>
-            <radialGradient id="alleyBg" cx="50%" cy="60%" r="80%">
-              <stop offset="0%" stopColor="#3b2a1a" />
-              <stop offset="60%" stopColor="#1f1610" />
-              <stop offset="100%" stopColor="#0a0705" />
+            <radialGradient id="cryptBg" cx="50%" cy="55%" r="80%">
+              <stop offset="0%" stopColor="#2a2530" />
+              <stop offset="55%" stopColor="#15131c" />
+              <stop offset="100%" stopColor="#08060a" />
             </radialGradient>
-            <linearGradient id="bowWood" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#5b3a1a" />
-              <stop offset="50%" stopColor="#a06a2e" />
-              <stop offset="100%" stopColor="#5b3a1a" />
+            <linearGradient id="demonBow" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#1c1c25" />
+              <stop offset="40%" stopColor="#3a2a3a" />
+              <stop offset="60%" stopColor="#5a2a3a" />
+              <stop offset="100%" stopColor="#1c1c25" />
             </linearGradient>
-            <linearGradient id="skinGrime" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#8a7a52" />
-              <stop offset="100%" stopColor="#4a3a22" />
+            <linearGradient id="plagueCloak" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#2a2a35" />
+              <stop offset="100%" stopColor="#0f0f15" />
             </linearGradient>
+            <radialGradient id="torchGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.9" />
+              <stop offset="40%" stopColor="#dc2626" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#dc2626" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="bloodGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#dc2626" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#dc2626" stopOpacity="0" />
+            </radialGradient>
           </defs>
 
-          <rect width="400" height="400" fill="url(#alleyBg)" />
+          {/* фон склепа */}
+          <rect width="400" height="400" fill="url(#cryptBg)" />
 
-          {/* кирпичная стена */}
-          <g opacity="0.25">
-            {[0, 40, 80, 120, 160, 200, 240, 280, 320].map((y, i) => (
+          {/* каменные блоки стен */}
+          <g opacity="0.4">
+            {[0, 50, 100, 150, 200, 250, 300, 350].map((y, i) => (
               <g key={y}>
-                {[0, 60, 120, 180, 240, 300, 360].map((x, j) => (
+                {[0, 70, 140, 210, 280, 350].map((x, j) => (
                   <rect
                     key={x}
-                    x={x + (i % 2 === 0 ? 0 : 30)}
+                    x={x + (i % 2 === 0 ? 0 : 35)}
                     y={y}
-                    width={56}
-                    height={36}
-                    fill="#2a1d12"
-                    stroke="#1a1208"
-                    strokeWidth="1"
+                    width={66}
+                    height={46}
+                    fill="#1a1a22"
+                    stroke="#0a0a0f"
+                    strokeWidth="1.5"
                   />
                 ))}
               </g>
             ))}
           </g>
 
-          {/* мусор на земле */}
-          <g opacity="0.5">
-            <ellipse cx="60" cy="380" rx="40" ry="8" fill="#1a1208" />
-            <ellipse cx="340" cy="385" rx="50" ry="9" fill="#1a1208" />
-            <rect x="40" y="370" width="20" height="14" fill="#3a2a18" rx="2" />
-            <rect x="320" y="372" width="22" height="12" fill="#3a2a18" rx="2" />
-          </g>
-
-          {/* длинноносый воришка-бомжа */}
-          <g>
-            {/* тело — грязная одеяние */}
+          {/* готическая арка окно в центре верха */}
+          <g opacity="0.6">
             <path
-              d="M 200 200 Q 175 220 168 290 L 175 360 L 225 360 L 232 290 Q 225 220 200 200 Z"
-              fill="#4a3a22"
-              stroke="#2a1d12"
+              d="M 170 30 L 170 80 Q 170 50 200 50 Q 230 50 230 80 L 230 30 Z"
+              fill="#0a0a0f"
+              stroke="#3f3f46"
               strokeWidth="2"
             />
-            {/* заплатки */}
-            <rect x="178" y="240" width="14" height="10" fill="#6a5a3a" stroke="#3a2a18" strokeWidth="1" />
-            <rect x="210" y="270" width="12" height="14" fill="#6a5a3a" stroke="#3a2a18" strokeWidth="1" />
-            <rect x="195" y="310" width="16" height="10" fill="#6a5a3a" stroke="#3a2a18" strokeWidth="1" />
+            {/* витраж — трещины */}
+            <path d="M 200 50 L 200 90 M 185 60 L 215 60 M 175 75 L 225 75" stroke="#3f3f46" strokeWidth="0.8" />
+          </g>
 
-            {/* голова — тоже грязная */}
-            <ellipse cx="200" cy="170" rx="32" ry="36" fill="url(#skinGrime)" stroke="#3a2a22" strokeWidth="2" />
-            {/* всклокоченные волосы/борода */}
+          {/* факелы по бокам */}
+          <g>
+            {/* левый факел */}
+            <rect x="48" y="160" width="6" height="60" fill="#3a2a18" stroke="#1a1208" strokeWidth="1" rx="2" />
+            <ellipse cx="51" cy="160" rx="10" ry="6" fill="#5b3a1a" stroke="#1a1208" strokeWidth="1" />
+            {/* пламя */}
+            <ellipse cx="51" cy="148" rx="6" ry="14" fill="#fbbf24">
+              <animate attributeName="ry" values="14;16;12;14" dur="0.5s" repeatCount="indefinite" />
+            </ellipse>
+            <ellipse cx="51" cy="152" rx="3" ry="8" fill="#dc2626" />
+            <circle cx="51" cy="155" r="40" fill="url(#torchGlow)" opacity="0.7" />
+
+            {/* правый факел */}
+            <rect x="346" y="160" width="6" height="60" fill="#3a2a18" stroke="#1a1208" strokeWidth="1" rx="2" />
+            <ellipse cx="349" cy="160" rx="10" ry="6" fill="#5b3a1a" stroke="#1a1208" strokeWidth="1" />
+            <ellipse cx="349" cy="148" rx="6" ry="14" fill="#fbbf24">
+              <animate attributeName="ry" values="14;12;16;14" dur="0.6s" repeatCount="indefinite" />
+            </ellipse>
+            <ellipse cx="349" cy="152" rx="3" ry="8" fill="#dc2626" />
+            <circle cx="349" cy="155" r="40" fill="url(#torchGlow)" opacity="0.7" />
+          </g>
+
+          {/* каменный пол — булыжники */}
+          <g opacity="0.6">
+            <ellipse cx="60" cy="385" rx="50" ry="10" fill="#0a0a0f" />
+            <ellipse cx="200" cy="385" rx="80" ry="8" fill="#0a0a0f" />
+            <ellipse cx="340" cy="385" rx="55" ry="10" fill="#0a0a0f" />
+            {/* череп на полу */}
+            <g transform="translate(330, 380) scale(0.8)" opacity="0.7">
+              <ellipse cx="0" cy="0" rx="8" ry="6" fill="#e7e5e4" />
+              <ellipse cx="-3" cy="-1" rx="1.5" ry="2" fill="#0a0a0f" />
+              <ellipse cx="3" cy="-1" rx="1.5" ry="2" fill="#0a0a0f" />
+              <path d="M -2 3 L 0 5 L 2 3" stroke="#0a0a0f" strokeWidth="0.5" fill="none" />
+            </g>
+          </g>
+
+          {/* === ЧУМНОЙ ВОРИШКА В КАПЮШОНЕ === */}
+          <g>
+            {/* силуэт капюшона и мантии */}
             <path
-              d="M 168 152 Q 170 138 200 134 Q 230 138 232 152 Q 235 162 228 168 Q 215 158 200 156 Q 185 158 172 168 Q 165 162 168 152 Z"
-              fill="#2a1d12"
-              stroke="#1a1208"
+              d="M 200 110 Q 165 115 158 175 Q 152 220 158 280 Q 165 340 175 365 L 225 365 Q 235 340 242 280 Q 248 220 242 175 Q 235 115 200 110 Z"
+              fill="url(#plagueCloak)"
+              stroke="#08080d"
+              strokeWidth="2"
+            />
+            {/* капюшон — нависает над лицом */}
+            <path
+              d="M 200 105 Q 158 115 160 165 Q 162 180 175 188 L 225 188 Q 238 180 240 165 Q 242 115 200 105 Z"
+              fill="#0f0f15"
+              stroke="#08080d"
+              strokeWidth="2"
+            />
+            {/* тень от капюшона на лице */}
+            <ellipse cx="200" cy="175" rx="28" ry="22" fill="#050507" opacity="0.85" />
+
+            {/* лицо — чумное, желтоватое */}
+            <ellipse cx="200" cy="178" rx="20" ry="24" fill="#7a6a3a" opacity="0.85" />
+            {/* длинный клювовидный нос (как у чумного врача) */}
+            <path
+              d="M 200 178 Q 215 182 232 200 Q 235 208 228 212 Q 218 210 210 200 Q 204 192 200 188 Z"
+              fill="#5a4a2a"
+              stroke="#2a1d12"
+              strokeWidth="1.5"
+            />
+            {/* кончик носа */}
+            <ellipse cx="232" cy="208" rx="4" ry="3" fill="#3a2a1a" />
+
+            {/* желтые чумные глаза */}
+            <ellipse cx="190" cy="170" rx="4" ry="3" fill="#fbbf24" />
+            <ellipse cx="190" cy="170" rx="1.5" ry="2" fill="#0a0a0f" />
+            <ellipse cx="210" cy="170" rx="4" ry="3" fill="#fbbf24" />
+            <ellipse cx="210" cy="170" rx="1.5" ry="2" fill="#0a0a0f" />
+            {/* блеск в глазах */}
+            <circle cx="191" cy="169" r="0.7" fill="#fff" opacity="0.9" />
+            <circle cx="211" cy="169" r="0.7" fill="#fff" opacity="0.9" />
+
+            {/* бровь — злая */}
+            <path d="M 184 163 L 196 165" stroke="#0a0a0f" strokeWidth="2" />
+            <path d="M 204 165 L 216 163" stroke="#0a0a0f" strokeWidth="2" />
+
+            {/* рот — задыхается, чёрный */}
+            <ellipse cx="210" cy="195" rx="6" ry="9" fill="#0a0a0f" stroke="#dc2626" strokeWidth="1" />
+            {/* кровь изо рта */}
+            <path d="M 210 200 L 208 215 L 206 220" stroke="#dc2626" strokeWidth="1.5" fill="none" />
+
+            {/* заплатки на мантии */}
+            <rect x="175" y="240" width="14" height="10" fill="#3a3a45" stroke="#08080d" strokeWidth="1" />
+            <rect x="210" y="270" width="12" height="14" fill="#3a3a45" stroke="#08080d" strokeWidth="1" />
+            <rect x="195" y="310" width="16" height="10" fill="#3a3a45" stroke="#08080d" strokeWidth="1" />
+            {/* рваный край мантии снизу */}
+            <path
+              d="M 175 360 L 175 370 L 180 365 L 185 370 L 190 365 L 195 370 L 200 365 L 205 370 L 210 365 L 215 370 L 220 365 L 225 370 L 225 360 Z"
+              fill="#0f0f15"
+              stroke="#08080d"
               strokeWidth="1"
             />
-            {/* длинный нос */}
-            <path
-              d="M 200 178 Q 222 182 240 200 Q 244 210 236 214 Q 226 212 218 202 Q 208 192 200 188 Z"
-              fill="url(#skinGrime)"
-              stroke="#3a2a22"
-              strokeWidth="1.5"
-            />
-            {/* нос-кончик */}
-            <circle cx="240" cy="208" r="4" fill="#7a6a42" stroke="#3a2a22" strokeWidth="1" />
-
-            {/* глаза — хитрые */}
-            <ellipse cx="190" cy="170" rx="3" ry="2" fill="#1a1208" />
-            <ellipse cx="208" cy="170" rx="3" ry="2" fill="#1a1208" />
-            {/* бровь */}
-            <path d="M 184 162 Q 192 158 200 162" stroke="#2a1d12" strokeWidth="2" fill="none" />
-            <path d="M 200 162 Q 208 158 216 162" stroke="#2a1d12" strokeWidth="2" fill="none" />
-
-            {/* рот — задыхается */}
-            <ellipse cx="206" cy="190" rx="6" ry="8" fill="#2a0808" stroke="#1a1208" strokeWidth="1" />
-            {/* язык */}
-            <ellipse cx="206" cy="193" rx="3" ry="4" fill="#7a2a2a" />
           </g>
 
-          {/* ЛУК — огибает шею воришки, тетива давит */}
+          {/* === ДЕМОНИЧЕСКИЙ ЛУК === */}
           <g>
-            {/* дуга лука сверху-слева, огибает шею, вниз-справа */}
+            {/* основная дуга — изогнутая как змея, с шипами */}
             <path
-              d="M 120 110 Q 90 200 120 290 Q 200 320 280 290 Q 310 200 280 110 Q 200 80 120 110 Z"
+              d="M 118 105 Q 85 200 118 295 Q 200 325 282 295 Q 315 200 282 105 Q 200 75 118 105 Z"
               fill="none"
-              stroke="url(#bowWood)"
-              strokeWidth="10"
+              stroke="url(#demonBow)"
+              strokeWidth="11"
               strokeLinecap="round"
             />
-            {/* внутренний контур дуги */}
+            {/* внутренний контур — блестящий */}
             <path
-              d="M 130 125 Q 105 200 130 275 Q 200 305 270 275 Q 295 200 270 125 Q 200 95 130 125 Z"
+              d="M 122 118 Q 95 200 122 282 Q 200 312 278 282 Q 305 200 278 118 Q 200 90 122 118 Z"
               fill="none"
-              stroke="#3a2a18"
+              stroke="#5a2a3a"
               strokeWidth="2"
+              opacity="0.8"
             />
 
-            {/* тетива — давит на шею воришки */}
+            {/* шипы на дуге лука */}
+            {[
+              { x: 90, y: 160, a: -45 },
+              { x: 95, y: 240, a: 45 },
+              { x: 120, y: 110, a: -75 },
+              { x: 120, y: 290, a: 75 },
+              { x: 310, y: 160, a: 45 },
+              { x: 305, y: 240, a: -45 },
+              { x: 280, y: 110, a: 75 },
+              { x: 280, y: 290, a: -75 },
+            ].map((s, i) => (
+              <path
+                key={i}
+                d="M 0 -8 L 4 0 L 0 8 L -4 0 Z"
+                fill="#1c1c25"
+                stroke="#0a0a0f"
+                strokeWidth="0.8"
+                transform={`translate(${s.x},${s.y}) rotate(${s.a})`}
+              />
+            ))}
+
+            {/* глаз демона в центре верхней дуги */}
+            <ellipse cx="200" cy="82" rx="8" ry="5" fill="#0a0a0f" stroke="#dc2626" strokeWidth="1.5" />
+            <ellipse cx="200" cy="82" rx="4" ry="3" fill="#dc2626" />
+            <ellipse cx="200" cy="82" rx="1.5" ry="2" fill="#fbbf24" />
+
+            {/* тетива — давит на шею */}
             <path
-              d="M 130 125 Q 200 215 270 125"
+              d="M 122 118 Q 200 215 278 118"
               fill="none"
-              stroke="#e5e7eb"
+              stroke="#94a3b8"
               strokeWidth="2"
-              strokeDasharray="4 2"
+              strokeDasharray="3 2"
+              opacity="0.85"
             />
-            {/* утолщение тетивы на шее — визуализация давления */}
+            {/* кровавый след тетивы на шее */}
             <ellipse
               cx="200"
-              cy="208"
-              rx="32"
-              ry="6"
+              cy="210"
+              rx="30"
+              ry="7"
               fill="none"
-              stroke={vibrate ? "#fca5a5" : "#e5e7eb"}
+              stroke={vibrate ? "#dc2626" : "#7f1d1d"}
               strokeWidth={vibrate ? "4" : "3"}
             />
-            {/* следы давления на шее */}
-            <path
-              d="M 175 205 Q 200 200 225 205"
-              stroke="#7a2a2a"
-              strokeWidth="1.5"
-              fill="none"
-              opacity="0.7"
-            />
-            <path
-              d="M 175 212 Q 200 208 225 212"
-              stroke="#7a2a2a"
-              strokeWidth="1.5"
-              fill="none"
-              opacity="0.5"
-            />
+            {/* кровавые подтёки от тетивы */}
+            <path d="M 175 213 L 175 220 M 185 215 L 184 225 M 200 216 L 200 230 M 215 215 L 216 225 M 225 213 L 225 220"
+              stroke="#dc2626" strokeWidth="1.2" fill="none" opacity="0.85" />
 
-            {/* рукоятка лука */}
-            <rect x="195" y="320" width="10" height="40" fill="#5b3a1a" stroke="#2a1d12" strokeWidth="1" rx="2" />
-            <rect x="190" y="358" width="20" height="6" fill="#3a2a18" rx="1" />
+            {/* рукоятка лука — обмотана кожей */}
+            <rect x="194" y="318" width="12" height="44" fill="#3a2a18" stroke="#0a0a0f" strokeWidth="1" rx="2" />
+            <path d="M 194 322 L 206 326 M 194 330 L 206 334 M 194 338 L 206 342 M 194 346 L 206 350"
+              stroke="#1a1208" strokeWidth="1" />
+            {/* навершие — череп */}
+            <ellipse cx="200" cy="365" rx="7" ry="5" fill="#e7e5e4" stroke="#0a0a0f" strokeWidth="1" />
+            <circle cx="197" cy="364" r="1.2" fill="#0a0a0f" />
+            <circle cx="203" cy="364" r="1.2" fill="#0a0a0f" />
           </g>
 
           {/* рука воришки тянется — выпускает ключ */}
           <g>
             <path
-              d="M 168 250 Q 130 270 110 290 Q 100 295 105 305 Q 115 305 125 295 Q 145 280 168 268"
-              fill="url(#skinGrime)"
-              stroke="#3a2a22"
+              d="M 165 250 Q 130 270 110 295 Q 100 305 108 312 Q 120 310 130 300 Q 150 282 168 270"
+              fill="url(#plagueCloak)"
+              stroke="#08080d"
               strokeWidth="1.5"
             />
-            {/* ключик в руке */}
-            <g transform="translate(100, 290) rotate(-25)">
-              <circle cx="0" cy="0" r="6" fill="none" stroke="#d97706" strokeWidth="2" />
-              <rect x="5" y="-2" width="14" height="4" fill="#d97706" />
-              <rect x="14" y="2" width="3" height="5" fill="#d97706" />
-              <rect x="18" y="2" width="3" height="3" fill="#d97706" />
+            {/* костлявая кисть */}
+            <ellipse cx="105" cy="305" rx="8" ry="6" fill="#7a6a3a" stroke="#3a2a1a" strokeWidth="1" />
+            {/* ржавый ключ в руке */}
+            <g transform="translate(100, 305) rotate(-25)">
+              <circle cx="0" cy="0" r="6" fill="none" stroke="#854d0e" strokeWidth="2.5" />
+              <rect x="5" y="-2" width="14" height="4" fill="#854d0e" />
+              <rect x="14" y="2" width="3" height="5" fill="#854d0e" />
+              <rect x="18" y="2" width="3" height="3" fill="#854d0e" />
             </g>
           </g>
 
-          {/* светимость — фокус на шее */}
-          <circle cx="200" cy="208" r="40" fill="#fca5a5" opacity={vibrate ? 0.25 : 0.08} />
+          {/* свечение — фокус на шее */}
+          <circle cx="200" cy="210" r="50" fill="url(#bloodGlow)" opacity={vibrate ? 0.9 : 0.4} />
+
+          {/* тёмные виньетки по углам */}
+          <rect width="400" height="400" fill="url(#cryptBg)" opacity="0.3" pointerEvents="none" />
         </svg>
 
         {/* всплывающие числа */}
@@ -289,13 +382,13 @@ export default function ClickerScene() {
         </div>
 
         {/* подсказка */}
-        <div className="absolute bottom-2 left-0 right-0 text-center text-[10px] uppercase tracking-wider text-amber-200/70 font-medium">
+        <div className="absolute bottom-2 left-0 right-0 text-center text-[10px] uppercase tracking-wider text-zinc-400 font-medium">
           Кликай — души воришку — получай ключи
         </div>
       </button>
 
       {/* последние выпавшие ключи */}
-      <div className="min-h-[24px] flex flex-wrap gap-1 justify-center max-w-[420px]">
+      <div className="min-h-[20px] flex flex-wrap gap-1 justify-center max-w-[280px]">
         <AnimatePresence>
           {recentDrops.map((d) => (
             <motion.span
@@ -312,8 +405,8 @@ export default function ClickerScene() {
         </AnimatePresence>
       </div>
 
-      <div className="text-[11px] text-amber-200/60 font-mono">
-        Всего кликов: <span className="text-amber-200 font-bold">{totalClicks}</span>
+      <div className="text-[11px] text-zinc-400 font-mono">
+        Всего кликов: <span className="text-zinc-200 font-bold">{totalClicks}</span>
       </div>
     </div>
   );

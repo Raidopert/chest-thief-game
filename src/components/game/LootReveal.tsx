@@ -55,7 +55,7 @@ export default function LootReveal() {
             >
               {lastDrop.emoji}
             </motion.div>
-            <div className="text-amber-100 font-bold text-sm text-center max-w-[220px]">
+            <div className="text-zinc-200 font-bold text-sm text-center max-w-[220px]">
               {lastDrop.name}
             </div>
             <div

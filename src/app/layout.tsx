@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import PWARegister from "@/components/game/PWARegister";
+import ErrorBoundary from "@/components/game/ErrorBoundary";
+import AutosaveIndicator from "@/components/game/AutosaveIndicator";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -60,9 +62,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <link rel="manifest" href="/manifest.webmanifest" />
       </head>
       <body className={`${inter.variable} antialiased`}>
-        {children}
-        <Toaster />
-        <PWARegister />
+        <ErrorBoundary>
+          {children}
+          <Toaster />
+          <PWARegister />
+          <AutosaveIndicator />
+        </ErrorBoundary>
       </body>
     </html>
   );

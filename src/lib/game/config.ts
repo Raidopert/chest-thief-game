@@ -140,7 +140,7 @@ export const KEY_TYPES: KeyType[] = [
     color: "#9ca3af",
     emoji: "🗝",
     qualityBoost: 0.0,
-    dropChance: 7000,
+    dropChance: 5000,
     holdTimeMs: 400,
   },
   {
@@ -149,7 +149,7 @@ export const KEY_TYPES: KeyType[] = [
     color: "#94a3b8",
     emoji: "🔑",
     qualityBoost: 0.12,
-    dropChance: 2000,
+    dropChance: 2800,
     holdTimeMs: 700,
   },
   {
@@ -158,8 +158,8 @@ export const KEY_TYPES: KeyType[] = [
     color: "#d97706",
     emoji: "🪙",
     qualityBoost: 0.28,
-    dropChance: 750,
-    holdTimeMs: 1100,
+    dropChance: 1400,
+    holdTimeMs: 1000,
   },
   {
     id: "silver",
@@ -167,8 +167,8 @@ export const KEY_TYPES: KeyType[] = [
     color: "#e5e7eb",
     emoji: "🔮",
     qualityBoost: 0.5,
-    dropChance: 220,
-    holdTimeMs: 1600,
+    dropChance: 600,
+    holdTimeMs: 1200,
     shopPrice: 1500,
   },
   {
@@ -177,8 +177,8 @@ export const KEY_TYPES: KeyType[] = [
     color: "#fbbf24",
     emoji: "🌟",
     qualityBoost: 0.78,
-    dropChance: 30,
-    holdTimeMs: 2400,
+    dropChance: 200,
+    holdTimeMs: 1400,
     shopPrice: 12000,
   },
 ];
@@ -517,7 +517,7 @@ export function xpForLevel(level: number): number {
 // Боссы появляются каждые N убийств
 export const BOSS_INTERVAL = 25;
 // Шанс элитного врага
-export const ELITE_CHANCE = 0.12;
+export const ELITE_CHANCE = 0.07;
 // Множители для элиты/босса
 export const ELITE_HP_MULT = 2;
 export const ELITE_REWARD_MULT = 2;
@@ -713,8 +713,10 @@ export const HERO_SKILLS: HeroSkill[] = [
 // ПОДЗЕМЕЛЬЯ / ЭТАЖИ
 // ============================================================================
 export const DUNGEON_KILLS_PER_FLOOR = 50;
-export const DUNGEON_HP_MULT_PER_FLOOR = 1.5;
-export const DUNGEON_REWARD_MULT_PER_FLOOR = 1.4;
+// Линейный рост (было ×1.5 — экспонента, к 10 этажу ×58HP, непроходимо)
+// Теперь ×0.8 за этаж — мягче, всегда пробивается героем
+export const DUNGEON_HP_MULT_PER_FLOOR = 0.8;
+export const DUNGEON_REWARD_MULT_PER_FLOOR = 0.6;
 export const DUNGEON_NAMES: string[] = [
   "Склеп Тьмы",
   "Костница",
@@ -744,7 +746,7 @@ export interface Achievement {
 export const ACHIEVEMENTS: Achievement[] = [
   { id: "click_10",      name: "Палец-Воин",        description: "10 кликов по воришке",       goal: 10,      metric: "clicks",        reward: { money: 50 }, emoji: "👆" },
   { id: "click_100",     name: "Молотильщик",       description: "100 кликов",                  goal: 100,     metric: "clicks",        reward: { money: 200, keys: { rarity: "iron", count: 1 } }, emoji: "🔨" },
-  { id: "click_1000",    name: "Несчётный",          description: "1000 кликов",                 goal: 1000,    metric: "clicks",        reward: { money: 1000, keys: { rarity: "bronze", count: 1 } }, emoji: "🌀" },
+  { id: "click_1000",    name: "Несчётный",          description: "1000 кликов",                 goal: 1000,    metric: "clicks",        reward: { money: 5000, keys: { rarity: "silver", count: 1 } }, emoji: "🌀" },
   { id: "chests_5",      name: "Искатель",          description: "Открой 5 сундуков",           goal: 5,       metric: "chestsOpened",  reward: { money: 100 }, emoji: "📦" },
   { id: "chests_25",     name: "Кладоискатель",     description: "Открой 25 сундуков",          goal: 25,      metric: "chestsOpened",  reward: { money: 500, keys: { rarity: "iron", count: 2 } }, emoji: "🗝" },
   { id: "chests_100",    name: "Сундук-Лорд",       description: "Открой 100 сундуков",         goal: 100,     metric: "chestsOpened",  reward: { money: 3000, keys: { rarity: "silver", count: 1 } }, emoji: "👑" },

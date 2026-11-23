@@ -457,7 +457,7 @@ export const useGameStore = create<GameState>()(
         const activeChests = state.chests.filter((c) => !c.opened);
         for (let attempt = 0; attempt < 30; attempt++) {
           const x = randRange(10, 78);
-          const y = randRange(14, 78);
+          const y = randRange(16, 78);
           let ok = true;
           for (const c of activeChests) {
             const dx = Math.abs(c.x - x);
@@ -1227,7 +1227,47 @@ export const useGameStore = create<GameState>()(
         }),
     }),
     {
-      name: "chest-thief-game-v3",
+      name: "chest-thief-game-v4",
+      version: 4,
+      // Миграция: заполняем недостающие поля при загрузке старых сейвов
+      migrate: (persistedState: any, version: number) => {
+        const s = persistedState ?? {};
+        // v3 → v4: добавлены bossKills, eliteKills, achievements, dailies, lastNotice
+        if (s.stats) {
+          s.stats.bossKills = s.stats.bossKills ?? 0;
+          s.stats.eliteKills = s.stats.eliteKills ?? 0;
+        }
+        if (!s.achievements) s.achievements = {};
+        if (!s.dailies) {
+          s.dailies = { date: todayStr(), quests: rollDailyQuests() };
+        } else if (s.dailies.date !== todayStr()) {
+          // старый день — обновим квесты с baseline = текущее значение метрики
+          const stats = s.stats ?? { totalClicks: 0, chestsOpened: 0, itemsFound: 0, moneyEarned: 0, enemiesKilled: 0, heroLevel: 1, bossKills: 0, eliteKills: 0 };
+          s.dailies = {
+            date: todayStr(),
+            quests: rollDailyQuests().map((q) => {
+              const def = DAILY_POOL.find((d) => d.id === q.id);
+              if (!def) return q;
+              const v = (stats as any)[def.metric === "clicks" ? "totalClicks" : def.metric === "heroLevel" ? "heroLevel" : def.metric] ?? 0;
+              return { ...q, progress: v };
+            }),
+          };
+        }
+        // equipped items: добавляем set если отсутствует (старые сейвы)
+        if (s.equipped) {
+          for (const k of Object.keys(s.equipped)) {
+            const item = s.equipped[k];
+            if (item && item.set === undefined) item.set = null;
+          }
+        }
+        // inventory stacks: добавляем set если отсутствует
+        if (s.inventory) {
+          for (const stack of s.inventory) {
+            if (stack && stack.set === undefined) stack.set = null;
+          }
+        }
+        return s;
+      },
       partialize: (s) => ({
         keys: s.keys,
         money: s.money,

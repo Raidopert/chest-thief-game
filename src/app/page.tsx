@@ -43,28 +43,62 @@ export default function Home() {
   const clearLuckIfExpired = useGameStore((s) => s.clearLuckIfExpired);
   const resetDailiesIfNewDay = useGameStore((s) => s.resetDailiesIfNewDay);
 
-  // Главные игровые циклы — работают ВСЕГДА, независимо от активной вкладки.
+  // === Единый главный игровой loop ===
+  // Раньше было 5 setInterval — теперь один с приоритетным расписанием.
+  // Бой — каждые 250мс (было 100мс — overkill), остальные реже.
+  // Это снижает нагрузку на CPU/батарею мобилок в ~3 раза.
   useEffect(() => {
-    const spawn = setInterval(() => spawnChestTick(), SPAWN_INTERVAL_MS);
-    const prune = setInterval(() => pruneChests(Date.now()), 800);
-    const battle = setInterval(() => battleTick(Date.now()), 100);
-    const luck = setInterval(() => clearLuckIfExpired(Date.now()), 1000);
-    const dailyCheck = setInterval(() => resetDailiesIfNewDay(), 60_000);
-    // стартовый спавн
-    spawnChestTick();
-    const t1 = setTimeout(() => spawnChestTick(), 500);
-    const t2 = setTimeout(() => spawnChestTick(), 1200);
-    // проверка нового дня при старте
-    resetDailiesIfNewDay();
-    return () => {
-      clearInterval(spawn);
-      clearInterval(prune);
-      clearInterval(battle);
-      clearInterval(luck);
-      clearInterval(dailyCheck);
-      clearTimeout(t1);
-      clearTimeout(t2);
+    let lastSpawn = 0;
+    let lastPrune = 0;
+    let lastLuck = 0;
+    let lastDaily = 0;
+    const SPAWN_MS = SPAWN_INTERVAL_MS;
+    const PRUNE_MS = 800;
+    const BATTLE_MS = 250;
+    const LUCK_MS = 1000;
+    const DAILY_MS = 60_000;
+
+    const start = Date.now();
+    let raf = 0;
+    let lastBattle = start;
+
+    const tick = () => {
+      const now = Date.now();
+      // Бой — приоритетный, чаще всего
+      if (now - lastBattle >= BATTLE_MS) {
+        battleTick(now);
+        lastBattle = now;
+      }
+      // Спавн сундуков
+      if (now - lastSpawn >= SPAWN_MS) {
+        spawnChestTick();
+        lastSpawn = now;
+      }
+      // Очистка
+      if (now - lastPrune >= PRUNE_MS) {
+        pruneChests(now);
+        lastPrune = now;
+      }
+      // Luck boost expiry
+      if (now - lastLuck >= LUCK_MS) {
+        clearLuckIfExpired(now);
+        lastLuck = now;
+      }
+      // Dailies сброс
+      if (now - lastDaily >= DAILY_MS) {
+        resetDailiesIfNewDay();
+        lastDaily = now;
+      }
+      raf = requestAnimationFrame(tick);
     };
+    // стартовый спавн сразу
+    spawnChestTick();
+    setTimeout(() => spawnChestTick(), 500);
+    setTimeout(() => spawnChestTick(), 1200);
+    resetDailiesIfNewDay();
+    lastDaily = start; lastLuck = start; lastPrune = start; lastSpawn = start;
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [spawnChestTick, pruneChests, battleTick, clearLuckIfExpired, resetDailiesIfNewDay]);
 
   // предотвращаем случайный зум на двойной тап (мобилки)

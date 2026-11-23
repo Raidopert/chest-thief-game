@@ -23,7 +23,7 @@ export default function ChestField() {
       style={{
         minHeight: 320,
         height: "min(55vh, 480px)",
-        backgroundImage: "url('/bg/chest-field-bg.png')",
+        backgroundImage: "url('bg/chest-field-bg.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}

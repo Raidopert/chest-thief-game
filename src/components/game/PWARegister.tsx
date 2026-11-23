@@ -8,7 +8,7 @@ export default function PWARegister() {
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch((err) => console.warn("[PWA] SW failed:", err));
+      navigator.serviceWorker.register(`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/sw.js`).catch((err) => console.warn("[PWA] SW failed:", err));
     }
     const handler = (e: Event) => {
       e.preventDefault();

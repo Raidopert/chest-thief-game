@@ -8,15 +8,17 @@ interface Props {
   onOpenShop: () => void;
   onOpenQuests: () => void;
   onOpenAltar: () => void;
+  onOpenPrestige: () => void;
 }
 
-export default function ResourceBar({ onOpenShop, onOpenQuests, onOpenAltar }: Props) {
+export default function ResourceBar({ onOpenShop, onOpenQuests, onOpenAltar, onOpenPrestige }: Props) {
   const keys = useGameStore((s) => s.keys);
   const money = useGameStore((s) => s.money);
   const selectedKey = useGameStore((s) => s.selectedKey);
   const setSelectedKey = useGameStore((s) => s.setSelectedKey);
   const luckBoost = useGameStore((s) => s.luckBoost);
   const clearLuckIfExpired = useGameStore((s) => s.clearLuckIfExpired);
+  const prestige = useGameStore((s) => s.prestige);
 
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -67,8 +69,21 @@ export default function ResourceBar({ onOpenShop, onOpenQuests, onOpenAltar }: P
           </div>
         </div>
 
-        {/* Кнопки магазина, заданий и алтаря */}
-        <div className="flex gap-1.5">
+        {/* Души престижа + кнопки */}
+        <div className="flex items-center gap-1.5">
+          {prestige.souls > 0 && (
+            <div className="flex flex-col items-center px-2 py-1 rounded-lg bg-purple-950/40 border border-purple-700/30">
+              <span className="text-[9px] uppercase text-purple-400/70 font-mono">Души</span>
+              <span className="text-purple-300 font-bold text-sm font-mono leading-none">{prestige.souls}</span>
+            </div>
+          )}
+          <button
+            onClick={onOpenPrestige}
+            className="px-3 py-2 rounded-xl bg-gradient-to-b from-purple-700 to-purple-950 text-purple-200 font-bold text-sm hover:from-purple-600 hover:to-purple-900 transition-colors border border-purple-600/50 shadow-md"
+            title="Престиж — сбросить прогресс ради множителя"
+          >
+            💀
+          </button>
           <button
             onClick={onOpenQuests}
             className="px-3 py-2 rounded-xl bg-gradient-to-b from-amber-800 to-amber-950 text-amber-200 font-bold text-sm hover:from-amber-700 hover:to-amber-900 transition-colors border border-amber-700/50 shadow-md"

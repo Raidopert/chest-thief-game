@@ -13,6 +13,7 @@ import AutoBattle from "@/components/game/AutoBattle";
 import GameTabs from "@/components/game/GameTabs";
 import QuestsModal from "@/components/game/QuestsModal";
 import AltarModal from "@/components/game/AltarModal";
+import PrestigeModal from "@/components/game/PrestigeModal";
 import NoticeToast from "@/components/game/NoticeToast";
 import {
   DUNGEON_KILLS_PER_FLOOR,
@@ -24,6 +25,7 @@ export default function Home() {
   const [shopOpen, setShopOpen] = useState(false);
   const [questsOpen, setQuestsOpen] = useState(false);
   const [altarOpen, setAltarOpen] = useState(false);
+  const [prestigeOpen, setPrestigeOpen] = useState(false);
   const hydrated = useGameStore((s) => s.hydrated);
   const totalClicks = useGameStore((s) => s.stats.totalClicks);
   const chestsOpened = useGameStore((s) => s.stats.chestsOpened);
@@ -156,6 +158,7 @@ export default function Home() {
           onOpenShop={() => setShopOpen(true)}
           onOpenQuests={() => setQuestsOpen(true)}
           onOpenAltar={() => setAltarOpen(true)}
+          onOpenPrestige={() => setPrestigeOpen(true)}
         />
 
         {/* Индикатор этажа подземелья */}
@@ -206,6 +209,7 @@ export default function Home() {
       <Shop open={shopOpen} onClose={() => setShopOpen(false)} />
       <QuestsModal open={questsOpen} onClose={() => setQuestsOpen(false)} />
       <AltarModal open={altarOpen} onClose={() => setAltarOpen(false)} />
+      <PrestigeModal open={prestigeOpen} onClose={() => setPrestigeOpen(false)} />
       <LootReveal />
       <NoticeToast />
     </div>

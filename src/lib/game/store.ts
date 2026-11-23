@@ -12,6 +12,8 @@ import {
   BOSS_HP_MULT,
   BOSS_KEY_DROP_CHANCE,
   BOSS_REWARD_MULT,
+  calculatePrestigeMult,
+  calculateSoulsGained,
   CHEST_FADE_MS_MAX,
   CHEST_FADE_MS_MIN,
   CHEST_HIDDEN_TIERS,
@@ -38,6 +40,7 @@ import {
   MAX_CHESTS_ON_SCREEN,
   RARITIES,
   RARITY_BY_ID,
+  PRESTIGE_CONFIG,
   SACRIFICE_LUCK_PER_ITEM,
   SET_BY_ID,
   SHOP_BOOSTERS,
@@ -126,6 +129,12 @@ interface GameState {
   lastNotice: { id: string; text: string; color: string; emoji: string } | null;
   clearLastNotice: () => void;
 
+  // престиж
+  prestige: { souls: number; count: number };
+  prestigeReset: () => boolean;
+  getPrestigeMult: () => number;
+  getSoulsGained: () => number;
+
   // достижения
   achievements: Record<string, AchievementState>;
 
@@ -193,9 +202,9 @@ function newChestId(): string {
   return `chest-${Date.now()}-${chestCounter}`;
 }
 
-function rollKeyFromClick(): KeyRarity | null {
-  // сначала проверим, упадёт ли вообще ключ
-  if (Math.random() > KEY_DROP_RATE_PER_CLICK) return null;
+function rollKeyFromClick(prestigeMult = 1): KeyRarity | null {
+  // сначала проверим, упадёт ли вообще ключ (с учётом множителя престижа)
+  if (Math.random() > KEY_DROP_RATE_PER_CLICK * prestigeMult) return null;
   // если упал — выбираем редкость по dropChance
   const total = KEY_TYPES.reduce((s, k) => s + k.dropChance, 0);
   let r = Math.random() * total;
@@ -410,6 +419,7 @@ export const useGameStore = create<GameState>()(
       },
       lastDrop: null,
       lastNotice: null,
+      prestige: { souls: 0, count: 0 },
       achievements: {},
       dailies: { date: todayStr(), quests: rollDailyQuests() },
       stats: {
@@ -426,7 +436,7 @@ export const useGameStore = create<GameState>()(
 
       clickClicker: () => {
         const state = get();
-        const droppedKey = rollKeyFromClick();
+        const droppedKey = rollKeyFromClick(calculatePrestigeMult(state.prestige.souls));
         if (droppedKey) {
           set({
             keys: { ...state.keys, [droppedKey]: state.keys[droppedKey] + 1 },
@@ -1034,6 +1044,75 @@ export const useGameStore = create<GameState>()(
         }
       },
 
+      // ========== ПРЕСТИЖ ==========
+      getSoulsGained: () => {
+        const state = get();
+        return calculateSoulsGained({
+          enemiesKilled: state.stats.enemiesKilled,
+          bossKills: state.stats.bossKills,
+          heroLevel: state.battle.heroLevel,
+          bestRarityFound: state.stats.bestRarityFound,
+        });
+      },
+
+      getPrestigeMult: () => {
+        const state = get();
+        return calculatePrestigeMult(state.prestige.souls);
+      },
+
+      prestigeReset: () => {
+        const state = get();
+        const soulsGained = calculateSoulsGained({
+          enemiesKilled: state.stats.enemiesKilled,
+          bossKills: state.stats.bossKills,
+          heroLevel: state.battle.heroLevel,
+          bestRarityFound: state.stats.bestRarityFound,
+        });
+        if (soulsGained < PRESTIGE_CONFIG.minSoulsToPrestige) return false;
+        const newTotalSouls = state.prestige.souls + soulsGained;
+        const newMult = calculatePrestigeMult(newTotalSouls);
+        // Сбрасываем прогресс, но сохраняем души, достижения, дейлики
+        set({
+          keys: { ...initialKeys },
+          money: 0,
+          selectedKey: "rusty",
+          luckBoost: null,
+          chests: [],
+          inventory: [],
+          equipped: {},
+          battle: {
+            currentEnemy: null,
+            heroLevel: 1,
+            heroXp: 0,
+            heroXpNext: xpForLevel(1),
+            enemiesKilled: 0,
+            lastAttackAt: 0,
+            lastReward: null,
+          },
+          lastDrop: null,
+          lastNotice: {
+            id: `prestige-${Date.now()}`,
+            text: `Престиж! +${soulsGained} душ · множитель ×${newMult.toFixed(2)}`,
+            color: "#a855f7",
+            emoji: "💀",
+          },
+          prestige: { souls: newTotalSouls, count: state.prestige.count + 1 },
+          stats: {
+            totalClicks: 0,
+            chestsOpened: 0,
+            itemsFound: 0,
+            moneyEarned: 0,
+            bestRarityFound: null,
+            enemiesKilled: 0,
+            heroLevel: 1,
+            bossKills: 0,
+            eliteKills: 0,
+          },
+          // достижения и дейлики НЕ сбрасываются
+        });
+        return true;
+      },
+
       clearLastNotice: () => set({ lastNotice: null }),
 
       // ========== АВТО-БОЙ ==========
@@ -1125,8 +1204,9 @@ export const useGameStore = create<GameState>()(
         const enemyMult = enemy.isBoss ? BOSS_REWARD_MULT : enemy.isElite ? ELITE_REWARD_MULT : 1;
         const floor = getCurrentFloor(state.battle.enemiesKilled);
         const fMult = floorRewardMult(floor);
-        const xpGain = Math.round(enemyType.xpReward * enemyMult * fMult);
-        const moneyGain = Math.round(randInt(enemyType.moneyReward[0], enemyType.moneyReward[1]) * enemyMult * fMult * moneyMult);
+        const pMult = calculatePrestigeMult(state.prestige.souls);
+        const xpGain = Math.round(enemyType.xpReward * enemyMult * fMult * pMult);
+        const moneyGain = Math.round(randInt(enemyType.moneyReward[0], enemyType.moneyReward[1]) * enemyMult * fMult * moneyMult * pMult);
         // шанс ключа: босс 50%, элита 2x базовый, иначе базовый
         const baseKeyChance = enemyType.keyDropChance;
         const keyChance = (enemy.isBoss ? BOSS_KEY_DROP_CHANCE : enemy.isElite ? baseKeyChance * 2 : baseKeyChance) * keyChanceMult;
@@ -1211,6 +1291,7 @@ export const useGameStore = create<GameState>()(
           },
           lastDrop: null,
           lastNotice: null,
+          prestige: { souls: 0, count: 0 },
           achievements: {},
           dailies: { date: todayStr(), quests: rollDailyQuests() },
           stats: {
@@ -1232,7 +1313,8 @@ export const useGameStore = create<GameState>()(
       // Миграция: заполняем недостающие поля при загрузке старых сейвов
       migrate: (persistedState: any, version: number) => {
         const s = persistedState ?? {};
-        // v3 → v4: добавлены bossKills, eliteKills, achievements, dailies, lastNotice
+        // v3 → v4: добавлены bossKills, eliteKills, achievements, dailies, lastNotice, prestige
+        if (!s.prestige) s.prestige = { souls: 0, count: 0 };
         if (s.stats) {
           s.stats.bossKills = s.stats.bossKills ?? 0;
           s.stats.eliteKills = s.stats.eliteKills ?? 0;
@@ -1279,6 +1361,7 @@ export const useGameStore = create<GameState>()(
         stats: s.stats,
         achievements: s.achievements,
         dailies: s.dailies,
+        prestige: s.prestige,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();

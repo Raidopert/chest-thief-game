@@ -818,4 +818,53 @@ export const GOTHIC_UI = {
   glow:      "rgba(220,38,38,0.5)",
 } as const;
 
+// ============================================================================
+// ПРЕСТИЖ-СИСТЕМА
+// ============================================================================
+// Игрок может «принести жертву» — скинуть весь прогресс (деньги, ключи, лут,
+// экипировку, уровень героя, этажи) ради перманентного множителя ко всем наградам.
+// Души начисляются на основе общего прогресса и НЕ сбрасываются при престиже.
+
+export interface PrestigeConfig {
+  // Сколько душ даёт каждый показатель прогресса
+  soulsPerFloor: number;       // за каждый пройденный этаж подземелья
+  soulsPerBoss: number;        // за каждого убитого босса
+  soulsPerHeroLevel: number;  // за каждый уровень героя
+  soulsPerDivine: number;      // за каждый divine предмет найденный
+  // Множитель ко всем наградам = 1 + totalSouls * multPerSoul
+  multPerSoul: number;
+  // Минимальный прогресс для первого престижа (чтобы не престижил сразу)
+  minSoulsToPrestige: number;
+}
+
+export const PRESTIGE_CONFIG: PrestigeConfig = {
+  soulsPerFloor: 2,       // 10 этажей = 20 душ
+  soulsPerBoss: 1,        // 5 боссов = 5 душ
+  soulsPerHeroLevel: 0.5, // ур.20 = 10 душ
+  soulsPerDivine: 5,      // 2 divine = 10 душ
+  multPerSoul: 0.05,      // 1 душа = +5% ко всем наградам
+  minSoulsToPrestige: 3,  // минимум 3 души для престижа
+};
+
+// Расчёт душ, которые игрок получит при престиже
+export function calculateSoulsGained(stats: {
+  enemiesKilled: number;
+  bossKills: number;
+  heroLevel: number;
+  bestRarityFound: RarityId | null;
+}): number {
+  const floor = Math.floor(stats.enemiesKilled / DUNGEON_KILLS_PER_FLOOR) + 1;
+  const floorsPassed = Math.max(0, floor - 1);
+  const fromFloors = floorsPassed * PRESTIGE_CONFIG.soulsPerFloor;
+  const fromBosses = stats.bossKills * PRESTIGE_CONFIG.soulsPerBoss;
+  const fromLevel = Math.floor(stats.heroLevel * PRESTIGE_CONFIG.soulsPerHeroLevel);
+  const fromDivine = stats.bestRarityFound === "divine" ? PRESTIGE_CONFIG.soulsPerDivine : 0;
+  return Math.floor(fromFloors + fromBosses + fromLevel + fromDivine);
+}
+
+// Расчёт множителя престижа
+export function calculatePrestigeMult(totalSouls: number): number {
+  return 1 + totalSouls * PRESTIGE_CONFIG.multPerSoul;
+}
+
 

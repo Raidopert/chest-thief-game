@@ -130,7 +130,7 @@ export default function AutoBattle() {
         className="relative w-full rounded-xl overflow-hidden border border-zinc-700"
         style={{
           aspectRatio: "1 / 1",
-          backgroundImage: "url('bg/battle-bg.png')",
+          backgroundImage: "url('/bg/battle-bg.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}

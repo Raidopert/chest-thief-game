@@ -89,7 +89,7 @@ export default function ClickerScene() {
           width: "100%",
           maxWidth: 280,
           aspectRatio: "1 / 1",
-          backgroundImage: "url('bg/clicker-bg.png')",
+          backgroundImage: "url('/bg/clicker-bg.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
@@ -101,7 +101,7 @@ export default function ClickerScene() {
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            backgroundImage: "url('bg/thief-portrait.png')",
+            backgroundImage: "url('/bg/thief-portrait.png')",
             backgroundSize: "cover",
             backgroundPosition: "center",
             transform: vibrate ? "translate(2px, -1px)" : "translate(0, 0)",

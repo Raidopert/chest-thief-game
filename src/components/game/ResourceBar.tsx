@@ -9,9 +9,10 @@ interface Props {
   onOpenQuests: () => void;
   onOpenAltar: () => void;
   onOpenPrestige: () => void;
+  onOpenUpgrades: () => void;
 }
 
-export default function ResourceBar({ onOpenShop, onOpenQuests, onOpenAltar, onOpenPrestige }: Props) {
+export default function ResourceBar({ onOpenShop, onOpenQuests, onOpenAltar, onOpenPrestige, onOpenUpgrades }: Props) {
   const keys = useGameStore((s) => s.keys);
   const money = useGameStore((s) => s.money);
   const selectedKey = useGameStore((s) => s.selectedKey);
@@ -77,6 +78,13 @@ export default function ResourceBar({ onOpenShop, onOpenQuests, onOpenAltar, onO
               <span className="text-purple-300 font-bold text-sm font-mono leading-none">{prestige.souls}</span>
             </div>
           )}
+          <button
+            onClick={onOpenUpgrades}
+            className="px-3 py-2 rounded-xl bg-gradient-to-b from-cyan-800 to-cyan-950 text-cyan-200 font-bold text-sm hover:from-cyan-700 hover:to-cyan-900 transition-colors border border-cyan-700/50 shadow-md"
+            title="Апгрейды кликера"
+          >
+            ⚒
+          </button>
           <button
             onClick={onOpenPrestige}
             className="px-3 py-2 rounded-xl bg-gradient-to-b from-purple-700 to-purple-950 text-purple-200 font-bold text-sm hover:from-purple-600 hover:to-purple-900 transition-colors border border-purple-600/50 shadow-md"

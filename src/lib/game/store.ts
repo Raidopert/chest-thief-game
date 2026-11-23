@@ -44,6 +44,9 @@ import {
   SACRIFICE_LUCK_PER_ITEM,
   SET_BY_ID,
   SHOP_BOOSTERS,
+  UPGRADE_BY_ID,
+  CLICKER_UPGRADES,
+  upgradePrice,
   xpForLevel,
   type Achievement,
   type BattleEnemy,
@@ -135,6 +138,10 @@ interface GameState {
   getPrestigeMult: () => number;
   getSoulsGained: () => number;
 
+  // апгрейды кликера
+  upgrades: Record<string, number>;
+  buyUpgrade: (id: string) => boolean;
+
   // достижения
   achievements: Record<string, AchievementState>;
 
@@ -215,17 +222,20 @@ function rollKeyFromClick(prestigeMult = 1): KeyRarity | null {
   return "rusty";
 }
 
-// Ролл редкости лута с учётом ключа, скрытого тира сундука и буста удачи
+// Ролл редкости лута с учётом ключа, скрытого тира сундука, буста удачи и тёмной силы
 function rollLootRarity(
   keyRarity: KeyRarity,
   hiddenTier: number,
   luckBoost: LuckBoost | null,
+  darkForceLevel = 0,
 ): RarityId {
   const key = KEY_BY_ID[keyRarity];
   const keyQ = key.qualityBoost;
   const chestQ = ((hiddenTier - 1) / (CHEST_HIDDEN_TIERS - 1)) * 0.45; // 0..0.45
   const boostQ = (luckBoost?.multiplier ?? 0) * 0.4;
-  const q = Math.min(0.95, keyQ + chestQ + boostQ);
+  // Тёмная сила: +10% за уровень к quality boost
+  const darkQ = darkForceLevel * 0.1;
+  const q = Math.min(0.95, keyQ + chestQ + boostQ + darkQ);
 
   const weights = RARITIES.map((r) => ({ id: r.id, w: r.weight }));
   // подавляем common, усиливаем высокие редкости пропорционально q
@@ -420,6 +430,7 @@ export const useGameStore = create<GameState>()(
       lastDrop: null,
       lastNotice: null,
       prestige: { souls: 0, count: 0 },
+      upgrades: {},
       achievements: {},
       dailies: { date: todayStr(), quests: rollDailyQuests() },
       stats: {
@@ -436,14 +447,30 @@ export const useGameStore = create<GameState>()(
 
       clickClicker: () => {
         const state = get();
-        const droppedKey = rollKeyFromClick(calculatePrestigeMult(state.prestige.souls));
+        const prestigeMult = calculatePrestigeMult(state.prestige.souls);
+        // Апгрейд: Стальная тетива — +5% за уровень к шансу ключа
+        const steelLevel = state.upgrades.steel_string ?? 0;
+        // Апгрейд: Кровавые монеты — +1💰 за уровень
+        const bloodLevel = state.upgrades.blood_coins ?? 0;
+        // Апгрейд: Двойной ключ — 5% за уровень шанс 2 ключей
+        const doubleKeyLevel = state.upgrades.double_key ?? 0;
+        const droppedKey = rollKeyFromClick(prestigeMult * (1 + steelLevel * 0.05));
+        // Деньги за клик (кровавые монеты)
+        const clickMoney = bloodLevel;
         if (droppedKey) {
+          // шанс двойного ключа
+          const isDouble = Math.random() < doubleKeyLevel * 0.05;
+          const keyCount = isDouble ? 2 : 1;
           set({
-            keys: { ...state.keys, [droppedKey]: state.keys[droppedKey] + 1 },
-            stats: { ...state.stats, totalClicks: state.stats.totalClicks + 1 },
+            keys: { ...state.keys, [droppedKey]: state.keys[droppedKey] + keyCount },
+            money: state.money + clickMoney,
+            stats: { ...state.stats, totalClicks: state.stats.totalClicks + 1, moneyEarned: state.stats.moneyEarned + clickMoney },
           });
         } else {
-          set({ stats: { ...state.stats, totalClicks: state.stats.totalClicks + 1 } });
+          set({
+            money: state.money + clickMoney,
+            stats: { ...state.stats, totalClicks: state.stats.totalClicks + 1, moneyEarned: state.stats.moneyEarned + clickMoney },
+          });
         }
         return { droppedKey, clickPower: 1 };
       },
@@ -587,7 +614,7 @@ export const useGameStore = create<GameState>()(
           return null;
         }
         const newKeys = { ...state.keys, [keyRarity]: state.keys[keyRarity] - 1 };
-        const rarity = rollLootRarity(keyRarity, chest.hiddenTier, state.luckBoost);
+        const rarity = rollLootRarity(keyRarity, chest.hiddenTier, state.luckBoost, state.upgrades.dark_force ?? 0);
         const item = pickLootItem(rarity);
         const uid = `stack-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
         const newStack: InventoryStack = {
@@ -1044,6 +1071,25 @@ export const useGameStore = create<GameState>()(
         }
       },
 
+      // ========== АПГРЕЙДЫ КЛИКЕРА ==========
+      buyUpgrade: (id) => {
+        const state = get();
+        const def = UPGRADE_BY_ID[id];
+        if (!def) return false;
+        const currentLevel = state.upgrades[id] ?? 0;
+        if (currentLevel >= def.maxLevel) return false;
+        const price = upgradePrice(def, currentLevel);
+        if (state.money < price) return false;
+        set({
+          money: state.money - price,
+          upgrades: { ...state.upgrades, [id]: currentLevel + 1 },
+          lastNotice: currentLevel === 0
+            ? { id: `upgrade-${id}-${Date.now()}`, text: `${def.emoji} ${def.name} ур.1!`, color: def.color, emoji: def.emoji }
+            : state.lastNotice,
+        });
+        return true;
+      },
+
       // ========== ПРЕСТИЖ ==========
       getSoulsGained: () => {
         const state = get();
@@ -1108,7 +1154,8 @@ export const useGameStore = create<GameState>()(
             bossKills: 0,
             eliteKills: 0,
           },
-          // достижения и дейлики НЕ сбрасываются
+          // достижения и дейлики НЕ сбрасываются, апгрейды сбрасываются
+          upgrades: {},
         });
         return true;
       },
@@ -1292,6 +1339,7 @@ export const useGameStore = create<GameState>()(
           lastDrop: null,
           lastNotice: null,
           prestige: { souls: 0, count: 0 },
+          upgrades: {},
           achievements: {},
           dailies: { date: todayStr(), quests: rollDailyQuests() },
           stats: {
@@ -1315,6 +1363,7 @@ export const useGameStore = create<GameState>()(
         const s = persistedState ?? {};
         // v3 → v4: добавлены bossKills, eliteKills, achievements, dailies, lastNotice, prestige
         if (!s.prestige) s.prestige = { souls: 0, count: 0 };
+        if (!s.upgrades) s.upgrades = {};
         if (s.stats) {
           s.stats.bossKills = s.stats.bossKills ?? 0;
           s.stats.eliteKills = s.stats.eliteKills ?? 0;
@@ -1362,6 +1411,7 @@ export const useGameStore = create<GameState>()(
         achievements: s.achievements,
         dailies: s.dailies,
         prestige: s.prestige,
+        upgrades: s.upgrades,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();

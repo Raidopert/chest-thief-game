@@ -14,6 +14,7 @@ import GameTabs from "@/components/game/GameTabs";
 import QuestsModal from "@/components/game/QuestsModal";
 import AltarModal from "@/components/game/AltarModal";
 import PrestigeModal from "@/components/game/PrestigeModal";
+import UpgradesModal from "@/components/game/UpgradesModal";
 import NoticeToast from "@/components/game/NoticeToast";
 import {
   DUNGEON_KILLS_PER_FLOOR,
@@ -26,6 +27,7 @@ export default function Home() {
   const [questsOpen, setQuestsOpen] = useState(false);
   const [altarOpen, setAltarOpen] = useState(false);
   const [prestigeOpen, setPrestigeOpen] = useState(false);
+  const [upgradesOpen, setUpgradesOpen] = useState(false);
   const hydrated = useGameStore((s) => s.hydrated);
   const totalClicks = useGameStore((s) => s.stats.totalClicks);
   const chestsOpened = useGameStore((s) => s.stats.chestsOpened);
@@ -44,6 +46,8 @@ export default function Home() {
   const battleTick = useGameStore((s) => s.battleTick);
   const clearLuckIfExpired = useGameStore((s) => s.clearLuckIfExpired);
   const resetDailiesIfNewDay = useGameStore((s) => s.resetDailiesIfNewDay);
+  const clickClicker = useGameStore((s) => s.clickClicker);
+  const autoClickerLevel = useGameStore((s) => s.upgrades.auto_clicker ?? 0);
 
   // === Единый главный игровой loop ===
   // Раньше было 5 setInterval — теперь один с приоритетным расписанием.
@@ -54,11 +58,13 @@ export default function Home() {
     let lastPrune = 0;
     let lastLuck = 0;
     let lastDaily = 0;
+    let lastAutoClick = 0;
     const SPAWN_MS = SPAWN_INTERVAL_MS;
     const PRUNE_MS = 800;
     const BATTLE_MS = 250;
     const LUCK_MS = 1000;
     const DAILY_MS = 60_000;
+    const AUTO_CLICK_MS = 2000; // авто-кликер каждые 2 сек
 
     const start = Date.now();
     let raf = 0;
@@ -70,6 +76,11 @@ export default function Home() {
       if (now - lastBattle >= BATTLE_MS) {
         battleTick(now);
         lastBattle = now;
+      }
+      // Авто-кликер — если уровень > 0
+      if (autoClickerLevel > 0 && now - lastAutoClick >= AUTO_CLICK_MS) {
+        for (let i = 0; i < autoClickerLevel; i++) clickClicker();
+        lastAutoClick = now;
       }
       // Спавн сундуков
       if (now - lastSpawn >= SPAWN_MS) {
@@ -98,10 +109,10 @@ export default function Home() {
     setTimeout(() => spawnChestTick(), 500);
     setTimeout(() => spawnChestTick(), 1200);
     resetDailiesIfNewDay();
-    lastDaily = start; lastLuck = start; lastPrune = start; lastSpawn = start;
+    lastDaily = start; lastLuck = start; lastPrune = start; lastSpawn = start; lastAutoClick = start;
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [spawnChestTick, pruneChests, battleTick, clearLuckIfExpired, resetDailiesIfNewDay]);
+  }, [spawnChestTick, pruneChests, battleTick, clearLuckIfExpired, resetDailiesIfNewDay, clickClicker, autoClickerLevel]);
 
   // предотвращаем случайный зум на двойной тап (мобилки)
   useEffect(() => {
@@ -159,6 +170,7 @@ export default function Home() {
           onOpenQuests={() => setQuestsOpen(true)}
           onOpenAltar={() => setAltarOpen(true)}
           onOpenPrestige={() => setPrestigeOpen(true)}
+          onOpenUpgrades={() => setUpgradesOpen(true)}
         />
 
         {/* Индикатор этажа подземелья */}
@@ -210,6 +222,7 @@ export default function Home() {
       <QuestsModal open={questsOpen} onClose={() => setQuestsOpen(false)} />
       <AltarModal open={altarOpen} onClose={() => setAltarOpen(false)} />
       <PrestigeModal open={prestigeOpen} onClose={() => setPrestigeOpen(false)} />
+      <UpgradesModal open={upgradesOpen} onClose={() => setUpgradesOpen(false)} />
       <LootReveal />
       <NoticeToast />
     </div>

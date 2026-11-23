@@ -867,4 +867,99 @@ export function calculatePrestigeMult(totalSouls: number): number {
   return 1 + totalSouls * PRESTIGE_CONFIG.multPerSoul;
 }
 
+// ============================================================================
+// АПГРЕЙДЫ КЛИКЕРА
+// ============================================================================
+// 5 апгрейдов с растущими ценами — sink для денег + ощущение прогресса.
+// Каждый апгрейд можно прокачать до maxLevel.
+// Цена уровня N = basePrice * priceGrowth^N
+
+export interface ClickerUpgrade {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  maxLevel: number;
+  basePrice: number;
+  priceGrowth: number; // множитель цены за каждый уровень
+  color: string;
+  // описание эффекта на каждом уровне (для отображения)
+  effectPerLevel: string;
+}
+
+export const CLICKER_UPGRADES: ClickerUpgrade[] = [
+  {
+    id: "steel_string",
+    name: "Стальная тетива",
+    description: "+5% к шансу выпадения ключа за клик",
+    emoji: "🏹",
+    maxLevel: 10,
+    basePrice: 200,
+    priceGrowth: 1.8,
+    color: "#94a3b8",
+    effectPerLevel: "+5% шанс ключа",
+  },
+  {
+    id: "blood_coins",
+    name: "Кровавые монеты",
+    description: "+1💰 за каждый клик по воришке",
+    emoji: "🩸",
+    maxLevel: 10,
+    basePrice: 150,
+    priceGrowth: 1.7,
+    color: "#dc2626",
+    effectPerLevel: "+1💰/клик",
+  },
+  {
+    id: "auto_clicker",
+    name: "Авто-кликер",
+    description: "Автоматические клики каждые 2 сек",
+    emoji: "🤖",
+    maxLevel: 5,
+    basePrice: 500,
+    priceGrowth: 2.5,
+    color: "#22c55e",
+    effectPerLevel: "+1 клик/2сек",
+  },
+  {
+    id: "double_key",
+    name: "Двойной ключ",
+    description: "Шанс выпадения 2 ключей вместо 1",
+    emoji: "🗝",
+    maxLevel: 5,
+    basePrice: 1000,
+    priceGrowth: 3,
+    color: "#fbbf24",
+    effectPerLevel: "+5% шанс ×2",
+  },
+  {
+    id: "dark_force",
+    name: "Тёмная сила",
+    description: "+10% к шансу редкого лута из сундуков",
+    emoji: "🔮",
+    maxLevel: 5,
+    basePrice: 2000,
+    priceGrowth: 3.5,
+    color: "#a855f7",
+    effectPerLevel: "+10% редкость",
+  },
+];
+
+export const UPGRADE_BY_ID: Record<string, ClickerUpgrade> = CLICKER_UPGRADES.reduce(
+  (acc, u) => { acc[u.id] = u; return acc; },
+  {} as Record<string, ClickerUpgrade>,
+);
+
+// Цена конкретного уровня апгрейда (level = следующий покупаемый)
+export function upgradePrice(upgrade: ClickerUpgrade, currentLevel: number): number {
+  return Math.round(upgrade.basePrice * Math.pow(upgrade.priceGrowth, currentLevel));
+}
+
+// Применение эффектов:
+// steel_string: level * 0.05 к шансу ключа
+// blood_coins: level монет за клик
+// auto_clicker: level кликов каждые 2 сек
+// double_key: level * 0.05 шанс выпадения 2 ключей
+// dark_force: level * 0.1 к quality boost в rollLootRarity
+
 

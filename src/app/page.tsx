@@ -61,6 +61,7 @@ export default function Home() {
     let lastLuck = 0;
     let lastDaily = 0;
     let lastAutoClick = 0;
+    let lastEventCheck = 0;
     const SPAWN_MS = SPAWN_INTERVAL_MS;
     const PRUNE_MS = 800;
     const BATTLE_MS = 250;

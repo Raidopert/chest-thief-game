@@ -112,6 +112,34 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* === S1: ГОТИЧЕСКИЙ СТИЛЬ ЗАГОЛОВКОВ === */
+.gothic-title {
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(220, 38, 38, 0.3), 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* S4: Анимация перехода между вкладками */
+@keyframes tabFadeSlide {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tab-content-enter {
+  animation: tabFadeSlide 0.25s ease-out;
+}
+
+/* S1: Пульсация для золотых элементов */
+@keyframes goldenPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.7); }
+}
+
+.golden-glow {
+  animation: goldenPulse 1.5s ease-in-out infinite;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

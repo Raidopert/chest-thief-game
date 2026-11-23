@@ -81,28 +81,28 @@ export default function ResourceBar({ onOpenShop, onOpenQuests, onOpenAltar, onO
           <button
             onClick={onOpenUpgrades}
             className="px-3 py-2 rounded-xl bg-gradient-to-b from-cyan-800 to-cyan-950 text-cyan-200 font-bold text-sm hover:from-cyan-700 hover:to-cyan-900 transition-colors border border-cyan-700/50 shadow-md"
-            title="Апгрейды кликера"
+            title="Апгрейды кликера" aria-label="Апгрейды кликера"
           >
             ⚒
           </button>
           <button
             onClick={onOpenPrestige}
             className="px-3 py-2 rounded-xl bg-gradient-to-b from-purple-700 to-purple-950 text-purple-200 font-bold text-sm hover:from-purple-600 hover:to-purple-900 transition-colors border border-purple-600/50 shadow-md"
-            title="Престиж — сбросить прогресс ради множителя"
+            title="Престиж" aria-label="Престиж — сбросить прогресс ради множителя"
           >
             💀
           </button>
           <button
             onClick={onOpenQuests}
             className="px-3 py-2 rounded-xl bg-gradient-to-b from-amber-800 to-amber-950 text-amber-200 font-bold text-sm hover:from-amber-700 hover:to-amber-900 transition-colors border border-amber-700/50 shadow-md"
-            title="Достижения и дейлики"
+            title="Достижения и дейлики" aria-label="Задания — достижения и дейлики"
           >
             📜
           </button>
           <button
             onClick={onOpenAltar}
             className="px-3 py-2 rounded-xl bg-gradient-to-b from-purple-800 to-purple-950 text-purple-200 font-bold text-sm hover:from-purple-700 hover:to-purple-900 transition-colors border border-purple-700/50 shadow-md"
-            title="Крафт и жертва"
+            title="Крафт и жертва" aria-label="Алтарь — крафт и жертва"
           >
             🏛
           </button>

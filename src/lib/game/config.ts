@@ -249,6 +249,7 @@ export interface SpawnedChest {
   opened: boolean;
   openingBy?: KeyRarity;
   openProgress: number; // 0..1 прогресс удержания
+  isGolden?: boolean;   // золотой сундук (ивент)
 }
 
 export interface LootItem {
@@ -961,5 +962,30 @@ export function upgradePrice(upgrade: ClickerUpgrade, currentLevel: number): num
 // auto_clicker: level кликов каждые 2 сек
 // double_key: level * 0.05 шанс выпадения 2 ключей
 // dark_force: level * 0.1 к quality boost в rollLootRarity
+
+// ============================================================================
+// СОБЫТИЯ / ИВЕНТЫ
+// ============================================================================
+// Два типа периодических событий:
+// 1. Золотой сундук — спавнится каждые 3-5 мин, гарантированный epic+ лут
+// 2. Вторжение демонов — каждые 10 мин на 30 сек, все враги — демоны ×3 HP ×5 reward
+
+export interface EventConfig {
+  goldenChestIntervalMin: number; // минимальный интервал (мс)
+  goldenChestIntervalMax: number;
+  demonInvasionInterval: number;  // каждые N мс
+  demonInvasionDuration: number;  // длительность (мс)
+  demonHpMult: number;
+  demonRewardMult: number;
+}
+
+export const EVENT_CONFIG: EventConfig = {
+  goldenChestIntervalMin: 180_000,  // 3 мин
+  goldenChestIntervalMax: 300_000,  // 5 мин
+  demonInvasionInterval: 600_000,   // 10 мин
+  demonInvasionDuration: 30_000,    // 30 сек
+  demonHpMult: 3,
+  demonRewardMult: 5,
+};
 
 

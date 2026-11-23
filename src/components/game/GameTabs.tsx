@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGameStore } from "@/lib/game/store";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Props {
   huntTab: React.ReactNode;
@@ -34,6 +34,19 @@ export default function GameTabs({ huntTab, heroTab, lootTab }: Props) {
   const enemiesKilled = useGameStore((s) => s.battle.enemiesKilled);
 
   const [tab, setTab] = useState<TabId>(getInitialTab);
+
+  // T3: Слушаем кастомное событие для переключения вкладок (от хоткеев)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as string;
+      if ((VALID_TABS as readonly string[]).includes(detail)) {
+        setTab(detail as TabId);
+        try { localStorage.setItem(STORAGE_KEY, detail); } catch {}
+      }
+    };
+    window.addEventListener("switch-tab", handler);
+    return () => window.removeEventListener("switch-tab", handler);
+  }, []);
 
   const handleTabChange = (value: string) => {
     if ((VALID_TABS as readonly string[]).includes(value)) {
@@ -78,13 +91,13 @@ export default function GameTabs({ huntTab, heroTab, lootTab }: Props) {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="hunt" className="mt-3">
+      <TabsContent value="hunt" className="mt-3 tab-content-enter" aria-label="Вкладка добычи — кликер и сундуки">
         {huntTab}
       </TabsContent>
-      <TabsContent value="hero" className="mt-3">
+      <TabsContent value="hero" className="mt-3 tab-content-enter" aria-label="Вкладка героя — экипировка и бой">
         {heroTab}
       </TabsContent>
-      <TabsContent value="loot" className="mt-3">
+      <TabsContent value="loot" className="mt-3 tab-content-enter" aria-label="Вкладка лута — инвентарь и продажа">
         {lootTab}
       </TabsContent>
     </Tabs>

@@ -46,6 +46,7 @@ import {
   SHOP_BOOSTERS,
   UPGRADE_BY_ID,
   CLICKER_UPGRADES,
+  EVENT_CONFIG,
   upgradePrice,
   xpForLevel,
   type Achievement,
@@ -141,6 +142,10 @@ interface GameState {
   // апгрейды кликера
   upgrades: Record<string, number>;
   buyUpgrade: (id: string) => boolean;
+
+  // события/ивенты
+  events: { nextGoldenChest: number; nextDemonInvasion: number; demonInvasionUntil: number };
+  checkEvents: (now: number) => void;
 
   // достижения
   achievements: Record<string, AchievementState>;
@@ -303,8 +308,9 @@ function isSlotCompatibleFn(itemSlot: EquipSlotId | null, targetSlot: EquipSlotI
 // Создаёт врага по случайному типу. На каждом BOSS_INTERVAL-убийстве спавним
 // босса (5x HP, 5x награда), иначе с шансом ELITE_CHANCE — элитного (2x).
 // HP врага дополнительно множится на этаж подземелья (×1.5 за каждый этаж).
-function makeEnemy(enemiesKilled: number): BattleEnemy {
-  const t = pickRandom(ENEMY_TYPES);
+function makeEnemy(enemiesKilled: number, demonInvasionUntil: number = 0): BattleEnemy {
+  const isInvasion = demonInvasionUntil > 0 && Date.now() < demonInvasionUntil;
+  const t = isInvasion ? ENEMY_TYPES.find(e => e.id === "demon")! : pickRandom(ENEMY_TYPES);
   const isBoss = enemiesKilled > 0 && enemiesKilled % BOSS_INTERVAL === 0;
   const isElite = !isBoss && Math.random() < ELITE_CHANCE;
   const floor = getCurrentFloor(enemiesKilled);
@@ -313,6 +319,7 @@ function makeEnemy(enemiesKilled: number): BattleEnemy {
   if (isBoss) hp = Math.round(t.hp * BOSS_HP_MULT * floorMult);
   else if (isElite) hp = Math.round(t.hp * ELITE_HP_MULT * floorMult);
   else hp = Math.round(t.hp * floorMult);
+  if (isInvasion) hp = Math.round(hp * EVENT_CONFIG.demonHpMult);
   return {
     id: `enemy-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
     typeId: t.id,
@@ -431,6 +438,11 @@ export const useGameStore = create<GameState>()(
       lastNotice: null,
       prestige: { souls: 0, count: 0 },
       upgrades: {},
+      events: {
+        nextGoldenChest: Date.now() + 60_000,
+        nextDemonInvasion: Date.now() + EVENT_CONFIG.demonInvasionInterval,
+        demonInvasionUntil: 0,
+      },
       achievements: {},
       dailies: { date: todayStr(), quests: rollDailyQuests() },
       stats: {
@@ -614,7 +626,16 @@ export const useGameStore = create<GameState>()(
           return null;
         }
         const newKeys = { ...state.keys, [keyRarity]: state.keys[keyRarity] - 1 };
-        const rarity = rollLootRarity(keyRarity, chest.hiddenTier, state.luckBoost, state.upgrades.dark_force ?? 0);
+        let rarity = rollLootRarity(keyRarity, chest.hiddenTier, state.luckBoost, state.upgrades.dark_force ?? 0);
+        // Золотой сундук — гарантированный epic+
+        if (chest.isGolden) {
+          const minRank = 3; // epic
+          if (rarityRank(rarity) < minRank) {
+            // перероллим пока не получим epic+
+            const epicPool = RARITIES.filter(r => rarityRank(r.id) >= minRank);
+            rarity = pickRandom(epicPool).id;
+          }
+        }
         const item = pickLootItem(rarity);
         const uid = `stack-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
         const newStack: InventoryStack = {
@@ -1071,6 +1092,74 @@ export const useGameStore = create<GameState>()(
         }
       },
 
+      // ========== СОБЫТИЯ / ИВЕНТЫ ==========
+      checkEvents: (now) => {
+        const state = get();
+        let updates: Partial<GameState> = {};
+        let notice = state.lastNotice;
+
+        // Золотой сундук
+        if (now >= state.events.nextGoldenChest && state.chests.filter(c => !c.opened).length < MAX_CHESTS_ON_SCREEN) {
+          // спавним золотой сундук: visual=golden, hiddenTier=7 (max), size=130
+          const chest: SpawnedChest = {
+            id: newChestId(),
+            visual: "golden",
+            size: 130,
+            x: randRange(20, 70),
+            y: randRange(20, 70),
+            hiddenTier: CHEST_HIDDEN_TIERS,
+            spawnAt: now,
+            fadeMs: 1000, // быстрое появление
+            lifeMs: 30000, // живёт 30 сек
+            opened: false,
+            openProgress: 0,
+            isGolden: true,
+          };
+          // следующий золотой сундук — через 3-5 мин
+          const nextDelay = randRange(EVENT_CONFIG.goldenChestIntervalMin, EVENT_CONFIG.goldenChestIntervalMax);
+          updates.chests = [...state.chests, chest];
+          updates.events = { ...state.events, nextGoldenChest: now + nextDelay };
+          notice = {
+            id: `golden-${now}`,
+            text: "🥚 Золотой сундук появился! 30 сек до исчезновения",
+            color: "#fbbf24",
+            emoji: "🥚",
+          };
+        }
+
+        // Вторжение демонов — старт
+        if (now >= state.events.nextDemonInvasion && state.events.demonInvasionUntil === 0) {
+          const until = now + EVENT_CONFIG.demonInvasionDuration;
+          updates.events = { ...(updates.events ?? state.events), demonInvasionUntil: until };
+          notice = {
+            id: `invasion-start-${now}`,
+            text: "🔥 ВТОРЖЕНИЕ ДЕМОНОВ! ×5 награды на 30 сек",
+            color: "#dc2626",
+            emoji: "🔥",
+          };
+        }
+
+        // Вторжение демонов — конец
+        if (state.events.demonInvasionUntil > 0 && now >= state.events.demonInvasionUntil) {
+          updates.events = {
+            ...(updates.events ?? state.events),
+            demonInvasionUntil: 0,
+            nextDemonInvasion: now + EVENT_CONFIG.demonInvasionInterval,
+          };
+          notice = {
+            id: `invasion-end-${now}`,
+            text: "Вторжение окончено. Демоны отступили.",
+            color: "#71717a",
+            emoji: "🌫",
+          };
+        }
+
+        if (updates.events || updates.chests) {
+          updates.lastNotice = notice;
+          set(updates as any);
+        }
+      },
+
       // ========== АПГРЕЙДЫ КЛИКЕРА ==========
       buyUpgrade: (id) => {
         const state = get();
@@ -1154,8 +1243,9 @@ export const useGameStore = create<GameState>()(
             bossKills: 0,
             eliteKills: 0,
           },
-          // достижения и дейлики НЕ сбрасываются, апгрейды сбрасываются
+          // достижения и дейлики НЕ сбрасываются, апгрейды и события сбрасываются
           upgrades: {},
+          events: { nextGoldenChest: Date.now() + 60_000, nextDemonInvasion: Date.now() + 600_000, demonInvasionUntil: 0 },
         });
         return true;
       },
@@ -1170,7 +1260,7 @@ export const useGameStore = create<GameState>()(
         set({
           battle: {
             ...state.battle,
-            currentEnemy: makeEnemy(state.battle.enemiesKilled),
+            currentEnemy: makeEnemy(state.battle.enemiesKilled, state.events.demonInvasionUntil),
           },
         });
       },
@@ -1182,7 +1272,7 @@ export const useGameStore = create<GameState>()(
           set({
             battle: {
               ...state.battle,
-              currentEnemy: makeEnemy(state.battle.enemiesKilled),
+              currentEnemy: makeEnemy(state.battle.enemiesKilled, state.events.demonInvasionUntil),
               lastAttackAt: now,
             },
           });
@@ -1252,8 +1342,10 @@ export const useGameStore = create<GameState>()(
         const floor = getCurrentFloor(state.battle.enemiesKilled);
         const fMult = floorRewardMult(floor);
         const pMult = calculatePrestigeMult(state.prestige.souls);
-        const xpGain = Math.round(enemyType.xpReward * enemyMult * fMult * pMult);
-        const moneyGain = Math.round(randInt(enemyType.moneyReward[0], enemyType.moneyReward[1]) * enemyMult * fMult * moneyMult * pMult);
+        // Вторжение демонов — ×5 к наградам
+        const invasionMult = state.events.demonInvasionUntil > 0 && Date.now() < state.events.demonInvasionUntil ? EVENT_CONFIG.demonRewardMult : 1;
+        const xpGain = Math.round(enemyType.xpReward * enemyMult * fMult * pMult * invasionMult);
+        const moneyGain = Math.round(randInt(enemyType.moneyReward[0], enemyType.moneyReward[1]) * enemyMult * fMult * moneyMult * pMult * invasionMult);
         // шанс ключа: босс 50%, элита 2x базовый, иначе базовый
         const baseKeyChance = enemyType.keyDropChance;
         const keyChance = (enemy.isBoss ? BOSS_KEY_DROP_CHANCE : enemy.isElite ? baseKeyChance * 2 : baseKeyChance) * keyChanceMult;
@@ -1285,7 +1377,7 @@ export const useGameStore = create<GameState>()(
           money: state.money + moneyGain,
           battle: {
             ...state.battle,
-            currentEnemy: makeEnemy(newEnemiesKilled),
+            currentEnemy: makeEnemy(newEnemiesKilled, state.events.demonInvasionUntil),
             heroLevel: level,
             heroXp: xp,
             heroXpNext: xpNext,
@@ -1340,6 +1432,7 @@ export const useGameStore = create<GameState>()(
           lastNotice: null,
           prestige: { souls: 0, count: 0 },
           upgrades: {},
+          events: { nextGoldenChest: Date.now() + 60_000, nextDemonInvasion: Date.now() + 600_000, demonInvasionUntil: 0 },
           achievements: {},
           dailies: { date: todayStr(), quests: rollDailyQuests() },
           stats: {
@@ -1364,6 +1457,7 @@ export const useGameStore = create<GameState>()(
         // v3 → v4: добавлены bossKills, eliteKills, achievements, dailies, lastNotice, prestige
         if (!s.prestige) s.prestige = { souls: 0, count: 0 };
         if (!s.upgrades) s.upgrades = {};
+        if (!s.events) s.events = { nextGoldenChest: Date.now() + 60_000, nextDemonInvasion: Date.now() + 600_000, demonInvasionUntil: 0 };
         if (s.stats) {
           s.stats.bossKills = s.stats.bossKills ?? 0;
           s.stats.eliteKills = s.stats.eliteKills ?? 0;
@@ -1412,6 +1506,7 @@ export const useGameStore = create<GameState>()(
         dailies: s.dailies,
         prestige: s.prestige,
         upgrades: s.upgrades,
+        events: s.events,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();

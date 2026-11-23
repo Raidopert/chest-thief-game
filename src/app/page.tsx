@@ -15,6 +15,7 @@ import QuestsModal from "@/components/game/QuestsModal";
 import AltarModal from "@/components/game/AltarModal";
 import PrestigeModal from "@/components/game/PrestigeModal";
 import UpgradesModal from "@/components/game/UpgradesModal";
+import EventBanner from "@/components/game/EventBanner";
 import NoticeToast from "@/components/game/NoticeToast";
 import {
   DUNGEON_KILLS_PER_FLOOR,
@@ -48,6 +49,7 @@ export default function Home() {
   const resetDailiesIfNewDay = useGameStore((s) => s.resetDailiesIfNewDay);
   const clickClicker = useGameStore((s) => s.clickClicker);
   const autoClickerLevel = useGameStore((s) => s.upgrades.auto_clicker ?? 0);
+  const checkEvents = useGameStore((s) => s.checkEvents);
 
   // === Единый главный игровой loop ===
   // Раньше было 5 setInterval — теперь один с приоритетным расписанием.
@@ -64,7 +66,8 @@ export default function Home() {
     const BATTLE_MS = 250;
     const LUCK_MS = 1000;
     const DAILY_MS = 60_000;
-    const AUTO_CLICK_MS = 2000; // авто-кликер каждые 2 сек
+    const AUTO_CLICK_MS = 2000;
+    const EVENT_CHECK_MS = 1000;
 
     const start = Date.now();
     let raf = 0;
@@ -86,6 +89,11 @@ export default function Home() {
       if (now - lastSpawn >= SPAWN_MS) {
         spawnChestTick();
         lastSpawn = now;
+      }
+      // События/ивенты
+      if (now - lastEventCheck >= EVENT_CHECK_MS) {
+        checkEvents(now);
+        lastEventCheck = now;
       }
       // Очистка
       if (now - lastPrune >= PRUNE_MS) {
@@ -109,10 +117,47 @@ export default function Home() {
     setTimeout(() => spawnChestTick(), 500);
     setTimeout(() => spawnChestTick(), 1200);
     resetDailiesIfNewDay();
-    lastDaily = start; lastLuck = start; lastPrune = start; lastSpawn = start; lastAutoClick = start;
+    lastDaily = start; lastLuck = start; lastPrune = start; lastSpawn = start; lastAutoClick = start; lastEventCheck = start;
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [spawnChestTick, pruneChests, battleTick, clearLuckIfExpired, resetDailiesIfNewDay, clickClicker, autoClickerLevel]);
+  }, [spawnChestTick, pruneChests, battleTick, clearLuckIfExpired, resetDailiesIfNewDay, clickClicker, autoClickerLevel, checkEvents]);
+
+  // T3: Keyboard shortcuts — хоткеи для вкладок, ключей, модалок
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Игнорируем если фокус в input/textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      const key = e.key.toLowerCase();
+      // 1/2/3 — переключение вкладок
+      if (key === "1") window.dispatchEvent(new CustomEvent("switch-tab", { detail: "hunt" }));
+      else if (key === "2") window.dispatchEvent(new CustomEvent("switch-tab", { detail: "hero" }));
+      else if (key === "3") window.dispatchEvent(new CustomEvent("switch-tab", { detail: "loot" }));
+      // Q/W/E/R/T — выбор ключа
+      else if (key === "q") useGameStore.getState().setSelectedKey("rusty");
+      else if (key === "w") useGameStore.getState().setSelectedKey("iron");
+      else if (key === "e") useGameStore.getState().setSelectedKey("bronze");
+      else if (key === "r") useGameStore.getState().setSelectedKey("silver");
+      else if (key === "t") useGameStore.getState().setSelectedKey("golden");
+      // S — магазин
+      else if (key === "s") setShopOpen(true);
+      // B — задания
+      else if (key === "b") setQuestsOpen(true);
+      // A — алтарь
+      else if (key === "a") setAltarOpen(true);
+      // U — апгрейды
+      else if (key === "u") setUpgradesOpen(true);
+      // P — престиж
+      else if (key === "p") setPrestigeOpen(true);
+      // Escape — закрыть все модалки
+      else if (key === "escape") {
+        setShopOpen(false); setQuestsOpen(false); setAltarOpen(false);
+        setPrestigeOpen(false); setUpgradesOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   // предотвращаем случайный зум на двойной тап (мобилки)
   useEffect(() => {
@@ -146,7 +191,7 @@ export default function Home() {
         {/* Заголовок */}
         <header className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-xl md:text-2xl font-black text-zinc-100 tracking-[0.2em] leading-none uppercase">
+            <h1 className="text-xl md:text-2xl font-black text-zinc-100 leading-none uppercase gothic-title">
               Сундучный Вор
             </h1>
           </div>
@@ -175,6 +220,9 @@ export default function Home() {
 
         {/* Индикатор этажа подземелья */}
         <FloorIndicator enemiesKilled={enemiesKilled} />
+
+        {/* Баннеры событий */}
+        <EventBanner />
 
         {/* Вкладки */}
         <GameTabs

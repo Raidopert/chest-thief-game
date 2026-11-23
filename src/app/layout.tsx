@@ -12,6 +12,8 @@ const inter = Inter({
   weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
+const BP = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 export const metadata: Metadata = {
   title: "Сундучный Вор: Тёмное Фэнтези",
   description:
@@ -53,13 +55,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <meta name="application-name" content="Сундучный Вор" />
         <meta name="msapplication-TileColor" content="#0a0a0f" />
         <meta name="msapplication-tap-highlight" content="no" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
-        <link rel="shortcut icon" href="/favicon-32.png" />
-        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="apple-touch-icon" href={`${BP}/apple-touch-icon.png`} />
+        <link rel="apple-touch-icon" sizes="180x180" href={`${BP}/apple-touch-icon.png`} />
+        <link rel="icon" type="image/png" sizes="32x32" href={`${BP}/favicon-32.png`} />
+        <link rel="icon" type="image/png" sizes="192x192" href={`${BP}/icon-192.png`} />
+        <link rel="icon" type="image/png" sizes="512x512" href={`${BP}/icon-512.png`} />
+        <link rel="shortcut icon" href={`${BP}/favicon-32.png`} />
+        <link rel="manifest" href={`${BP}/manifest.webmanifest`} />
       </head>
       <body className={`${inter.variable} antialiased`}>
         <ErrorBoundary>

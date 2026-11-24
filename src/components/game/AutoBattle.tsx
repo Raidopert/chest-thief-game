@@ -110,11 +110,17 @@ export default function AutoBattle() {
 
   const xpPct = Math.min(100, (battle.heroXp / battle.heroXpNext) * 100);
 
+  const ultCooldownUntil = useGameStore((s) => s.ultCooldownUntil);
+  const ultAction = useGameStore((s) => s.useUlt);
+  const [ultNow, setUltNow] = useState(Date.now());
+  useEffect(() => { const t = setInterval(() => setUltNow(Date.now()), 250); return () => clearInterval(t); }, []);
+  const ultReady = ultNow >= ultCooldownUntil;
+  const ultRemaining = ultReady ? 0 : Math.ceil((ultCooldownUntil - ultNow) / 1000);
   const weaponEmoji = equippedRight?.emoji ?? "✊";
 
   return (
     <div
-      className={`rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] p-3 md:p-4 ${shakeScreen ? "screen-shake" : ""}`}
+      className={`rounded-2xl gothic-panel p-3 md:p-4 ${shakeScreen ? "screen-shake" : ""}`}
     >
       <div className="flex items-center justify-between mb-2">
         <div className="text-[10px] uppercase tracking-widest text-zinc-400 font-mono">
@@ -157,10 +163,10 @@ export default function AutoBattle() {
             viewBox="0 0 100 200"
             className="w-full h-full"
             animate={{
-              rotate: attackAnim ? [-25, 5, -25] : -25,
-              x: attackAnim ? [0, -10, 0] : 0,
+              rotate: attackAnim ? [-20, 15, -8, -20] : -20,
+              x: attackAnim ? [0, -15, -5, 0] : 0,
             }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: 0.25, times: [0, 0.3, 0.6, 1], ease: "easeOut" }}
             style={{ transformOrigin: "90px 30px" }}
           >
             {/* латное плечо — наплечник с шипами */}
@@ -342,6 +348,7 @@ export default function AutoBattle() {
       </div>
 
       {/* Параметры героя под картинкой */}
+      <ComboIndicator />
       <div className="mt-3 space-y-2">
         {/* Уровень + XP бар */}
         <div>
@@ -383,6 +390,18 @@ export default function AutoBattle() {
         </div>
 
         {/* Навыки героя — открываются с ростом уровня */}
+        {/* Кнопка Ульт */}
+        <button
+          onClick={() => ultAction()}
+          disabled={!ultReady}
+          className={`w-full py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+            ultReady
+              ? 'bg-gradient-to-r from-amber-700 to-yellow-600 hover:from-amber-600 hover:to-yellow-500 text-white shadow-[0_0_15px_rgba(251,191,36,0.4)] animate-pulse'
+              : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+          }`}
+        >
+          {ultReady ? '⚡ УЛЬТ (×3 награда)' : `⚡ Перезарядка: ${ultRemaining}с`}
+        </button>
         <SkillsList heroLevel={battle.heroLevel} />
 
         {/* Последняя награда */}
@@ -468,5 +487,46 @@ function SkillsList({ heroLevel }: { heroLevel: number }) {
         })}
       </div>
     </div>
+  );
+}
+
+
+function ComboIndicator() {
+  const combo = useGameStore((s) => s.combo);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 200);
+    return () => clearInterval(t);
+  }, []);
+  const active = combo.count > 0 && now - combo.lastOpenAt < 10000;
+  const remaining = active ? Math.max(0, 10 - (now - combo.lastOpenAt) / 1000) : 0;
+  if (!active && combo.count === 0) return null;
+  return (
+    <motion.div
+      key={combo.count}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={`rounded-lg p-2 flex items-center gap-2 border ${
+        active ? 'bg-amber-950/40 border-amber-600/40' : 'bg-zinc-900/40 border-zinc-700/30 opacity-50'
+      }`}
+    >
+      <span className="text-lg">⚡</span>
+      <div className="flex-1">
+        <div className="text-[10px] uppercase tracking-wider text-amber-400 font-mono font-bold">
+          COMBO ×{active ? combo.count : 0}
+        </div>
+        <div className="h-1 bg-black/60 rounded-full overflow-hidden mt-0.5">
+          <div
+            className="h-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all"
+            style={{ width: `${remaining * 10}%` }}
+          />
+        </div>
+      </div>
+      {active && combo.count >= 3 && (
+        <span className="text-[9px] text-amber-300 font-mono">
+          +{(combo.count * 10)}% редкость
+        </span>
+      )}
+    </motion.div>
   );
 }

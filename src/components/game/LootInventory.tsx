@@ -52,7 +52,7 @@ export default function LootInventory() {
   const filteredGrouped = filter === "all" ? grouped : new Map([[filter, grouped.get(filter) ?? []]]);
 
   return (
-    <div className="flex flex-col h-full rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] overflow-hidden">
+    <div className="flex flex-col h-full rounded-2xl gothic-panel overflow-hidden">
       {/* шапка */}
       <div className="p-3 border-b border-zinc-700 flex items-center justify-between">
         <div>

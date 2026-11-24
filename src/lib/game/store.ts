@@ -47,6 +47,9 @@ import {
   UPGRADE_BY_ID,
   CLICKER_UPGRADES,
   EVENT_CONFIG,
+  COMBO_TIMEOUT_MS,
+  COMBO_BONUS_PER,
+  COMBO_MAX,
   upgradePrice,
   xpForLevel,
   type Achievement,
@@ -146,6 +149,9 @@ interface GameState {
   // события/ивенты
   events: { nextGoldenChest: number; nextDemonInvasion: number; demonInvasionUntil: number };
   checkEvents: (now: number) => void;
+  combo: { count: number; lastOpenAt: number };
+  ultCooldownUntil: number;
+  useUlt: () => boolean;
 
   // достижения
   achievements: Record<string, AchievementState>;
@@ -443,6 +449,8 @@ export const useGameStore = create<GameState>()(
         nextDemonInvasion: Date.now() + EVENT_CONFIG.demonInvasionInterval,
         demonInvasionUntil: 0,
       },
+      combo: { count: 0, lastOpenAt: 0 },
+      ultCooldownUntil: 0,
       achievements: {},
       dailies: { date: todayStr(), quests: rollDailyQuests() },
       stats: {
@@ -495,24 +503,22 @@ export const useGameStore = create<GameState>()(
         const size = Math.round(randRange(visualDef.sizeRange[0], visualDef.sizeRange[1]));
 
         // Ищем позицию, не пересекающуюся с существующими сундуками.
-        // Используем отдельные минимальные расстояния по X и Y в процентах,
-        // потому что поле шире чем выше (700x400px типично). Учитываем
-        // размер самого большого сундука (130px) с запасом.
-        const MIN_DIST_X = 26; // % по горизонтали
-        const MIN_DIST_Y = 32; // % по вертикали (поле короче)
+        // Анти-пересечение сундуков. Используем процентное расстояние по диагонали
+        // + прямоугольную проверку. Запас учитывает размер самого большого сундука.
+        const MIN_DIST = 24; // минимальное евклидово расстояние в % между центрами
         let chosenX = 0;
         let chosenY = 0;
         let foundValid = false;
         const activeChests = state.chests.filter((c) => !c.opened);
-        for (let attempt = 0; attempt < 30; attempt++) {
-          const x = randRange(10, 78);
+        for (let attempt = 0; attempt < 40; attempt++) {
+          const x = randRange(8, 82);
           const y = randRange(16, 78);
           let ok = true;
           for (const c of activeChests) {
-            const dx = Math.abs(c.x - x);
-            const dy = Math.abs(c.y - y);
-            // пересечение только если оба расстояния меньше минимальных
-            if (dx < MIN_DIST_X && dy < MIN_DIST_Y) {
+            const dx = c.x - x;
+            const dy = c.y - y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < MIN_DIST) {
               ok = false;
               break;
             }
@@ -626,6 +632,9 @@ export const useGameStore = create<GameState>()(
           return null;
         }
         const newKeys = { ...state.keys, [keyRarity]: state.keys[keyRarity] - 1 };
+        // Combo Chain бонус
+        const comboCount = state.combo.count;
+        const comboBonus = Math.min(COMBO_MAX, comboCount) * COMBO_BONUS_PER;
         let rarity = rollLootRarity(keyRarity, chest.hiddenTier, state.luckBoost, state.upgrades.dark_force ?? 0);
         // Золотой сундук — гарантированный epic+
         if (chest.isGolden) {
@@ -634,6 +643,14 @@ export const useGameStore = create<GameState>()(
             // перероллим пока не получим epic+
             const epicPool = RARITIES.filter(r => rarityRank(r.id) >= minRank);
             rarity = pickRandom(epicPool).id;
+          }
+        }
+        // Combo: повышаем редкость если ролл был низкий
+        if (comboBonus > 0 && rarityRank(rarity) < 6) {
+          // шанс повысить редкость на 1 ступень
+          if (Math.random() < comboBonus) {
+            const nextRank = Math.min(6, rarityRank(rarity) + 1);
+            rarity = BEST_RARITY_ORDER[nextRank];
           }
         }
         const item = pickLootItem(rarity);
@@ -1154,7 +1171,11 @@ export const useGameStore = create<GameState>()(
           };
         }
 
-        if (updates.events || updates.chests) {
+        // Сброс комбо если пауза > 10 сек
+        if (state.combo.count > 0 && now - state.combo.lastOpenAt > COMBO_TIMEOUT_MS) {
+          updates.combo = { count: 0, lastOpenAt: 0 };
+        }
+        if (updates.events || updates.chests || updates.combo) {
           updates.lastNotice = notice;
           set(updates as any);
         }
@@ -1246,6 +1267,49 @@ export const useGameStore = create<GameState>()(
           // достижения и дейлики НЕ сбрасываются, апгрейды и события сбрасываются
           upgrades: {},
           events: { nextGoldenChest: Date.now() + 60_000, nextDemonInvasion: Date.now() + 600_000, demonInvasionUntil: 0 },
+          combo: { count: 0, lastOpenAt: 0 },
+          combo: { count: 0, lastOpenAt: 0 },
+        });
+        return true;
+      },
+
+      // ========== УЛЬТ ==========
+      useUlt: () => {
+        const state = get();
+        if (Date.now() < state.ultCooldownUntil) return false;
+        const now = Date.now();
+        // Ульт: мгновенно убивает текущего врага + ×3 награда
+        if (!state.battle.currentEnemy) return false;
+        const enemy = state.battle.currentEnemy;
+        const enemyType = ENEMY_TYPES.find((e) => e.id === enemy.typeId)!;
+        const enemyMult = enemy.isBoss ? BOSS_REWARD_MULT : enemy.isElite ? ELITE_REWARD_MULT : 1;
+        const floor = getCurrentFloor(state.battle.enemiesKilled);
+        const fMult = floorRewardMult(floor);
+        const pMult = calculatePrestigeMult(state.prestige.souls);
+        const xpGain = Math.round(enemyType.xpReward * enemyMult * fMult * pMult * 3);
+        const moneyGain = Math.round(randInt(enemyType.moneyReward[0], enemyType.moneyReward[1]) * enemyMult * fMult * pMult * 3);
+        const keyDrop = Math.random() < 0.5;
+        const keyRarity: KeyRarity = enemy.isBoss ? 'golden' : enemy.isElite ? 'silver' : 'bronze';
+        let level = state.battle.heroLevel;
+        let xp = state.battle.heroXp + xpGain;
+        let xpNext = state.battle.heroXpNext;
+        while (xp >= xpNext) { xp -= xpNext; level++; xpNext = xpForLevel(level); }
+        const newKeys = keyDrop ? { ...state.keys, [keyRarity]: state.keys[keyRarity] + 1 } : state.keys;
+        const newEnemiesKilled = state.battle.enemiesKilled + 1;
+        set({
+          keys: newKeys,
+          money: state.money + moneyGain,
+          battle: {
+            ...state.battle,
+            currentEnemy: makeEnemy(newEnemiesKilled, state.events.demonInvasionUntil),
+            heroLevel: level, heroXp: xp, heroXpNext: xpNext,
+            enemiesKilled: newEnemiesKilled, lastAttackAt: now,
+            lastReward: { xp: xpGain, money: moneyGain, key: keyDrop, enemyName: 'УЛЬТ! ' + enemyType.name },
+          },
+          ultCooldownUntil: now + 60_000,
+          stats: { ...state.stats, enemiesKilled: newEnemiesKilled, heroLevel: level, moneyEarned: state.stats.moneyEarned + moneyGain,
+            bossKills: state.stats.bossKills + (enemy.isBoss ? 1 : 0), eliteKills: state.stats.eliteKills + (enemy.isElite ? 1 : 0) },
+          lastNotice: { id: 'ult-' + now, text: '⚡ УЛЬТ! ×3 награда', color: '#fbbf24', emoji: '⚡' },
         });
         return true;
       },
@@ -1433,6 +1497,7 @@ export const useGameStore = create<GameState>()(
           prestige: { souls: 0, count: 0 },
           upgrades: {},
           events: { nextGoldenChest: Date.now() + 60_000, nextDemonInvasion: Date.now() + 600_000, demonInvasionUntil: 0 },
+          combo: { count: 0, lastOpenAt: 0 },
           achievements: {},
           dailies: { date: todayStr(), quests: rollDailyQuests() },
           stats: {
@@ -1457,7 +1522,11 @@ export const useGameStore = create<GameState>()(
         // v3 → v4: добавлены bossKills, eliteKills, achievements, dailies, lastNotice, prestige
         if (!s.prestige) s.prestige = { souls: 0, count: 0 };
         if (!s.upgrades) s.upgrades = {};
+        if (!s.combo) s.combo = { count: 0, lastOpenAt: 0 };
+        if (s.ultCooldownUntil === undefined) s.ultCooldownUntil = 0;
         if (!s.events) s.events = { nextGoldenChest: Date.now() + 60_000, nextDemonInvasion: Date.now() + 600_000, demonInvasionUntil: 0 };
+        if (!s.combo) s.combo = { count: 0, lastOpenAt: 0 };
+        if (s.ultCooldownUntil === undefined) s.ultCooldownUntil = 0;
         if (s.stats) {
           s.stats.bossKills = s.stats.bossKills ?? 0;
           s.stats.eliteKills = s.stats.eliteKills ?? 0;
@@ -1507,6 +1576,9 @@ export const useGameStore = create<GameState>()(
         prestige: s.prestige,
         upgrades: s.upgrades,
         events: s.events,
+        combo: s.combo,
+        combo: s.combo,
+        ultCooldownUntil: s.ultCooldownUntil,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();

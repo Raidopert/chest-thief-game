@@ -19,7 +19,7 @@ export default function ChestField() {
 
   return (
     <div
-      className="relative w-full rounded-2xl overflow-hidden border border-zinc-700"
+      className="relative w-full rounded-2xl overflow-hidden gothic-panel scene-vignette"
       style={{
         minHeight: 320,
         height: "min(55vh, 480px)",

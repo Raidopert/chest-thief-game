@@ -193,3 +193,64 @@
   background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.6) 100%);
   pointer-events: none;
 }
+
+/* === ГОТИЧЕСКИЕ РАМКИ НА ПАНЕЛЯХ === */
+.gothic-panel {
+  position: relative;
+  background: linear-gradient(135deg, rgba(28, 25, 35, 0.95), rgba(15, 13, 21, 0.98));
+  border: 1px solid rgba(120, 80, 160, 0.15);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 0 30px rgba(0, 0, 0, 0.3);
+}
+
+.gothic-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, transparent 30%),
+    linear-gradient(225deg, rgba(168, 85, 247, 0.05) 0%, transparent 30%);
+}
+
+/* Угловые декорации — фиолетовые уголки */
+.gothic-corners-tl::before,
+.gothic-corners-tr::before,
+.gothic-corners-bl::before,
+.gothic-corners-br::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: rgba(168, 85, 247, 0.4);
+  pointer-events: none;
+  z-index: 1;
+}
+.gothic-corners-tl::before { top: -1px; left: -1px; border-top: 2px solid; border-left: 2px solid; border-radius: 2px 0 0 0; }
+.gothic-corners-tr::before { top: -1px; right: -1px; border-top: 2px solid; border-right: 2px solid; border-radius: 0 2px 0 0; }
+.gothic-corners-bl::before { bottom: -1px; left: -1px; border-bottom: 2px solid; border-left: 2px solid; border-radius: 0 0 0 2px; }
+.gothic-corners-br::before { bottom: -1px; right: -1px; border-bottom: 2px solid; border-right: 2px solid; border-radius: 0 0 2px 0; }
+
+/* Виньетка для сцен */
+.scene-vignette::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.7) 100%);
+  pointer-events: none;
+}
+
+/* Свечение текста */
+.text-glow-purple { text-shadow: 0 0 12px rgba(168, 85, 247, 0.4); }
+.text-glow-red { text-shadow: 0 0 12px rgba(220, 38, 38, 0.4); }
+.text-glow-gold { text-shadow: 0 0 12px rgba(251, 191, 36, 0.4); }
+
+/* Параллакс фоны */
+.parallax-bg {
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+}

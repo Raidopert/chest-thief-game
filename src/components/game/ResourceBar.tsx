@@ -36,7 +36,7 @@ export default function ResourceBar({ onOpenShop, onOpenQuests, onOpenAltar, onO
   const luckSeconds = Math.floor((luckRemaining % 60000) / 1000);
 
   return (
-    <div className="w-full rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] p-3 shadow-lg">
+    <div className="w-full rounded-2xl gothic-panel p-3 shadow-lg">
       <div className="flex flex-wrap items-center gap-3 justify-between">
         {/* Деньги */}
         <div className="flex items-center gap-2">

@@ -88,6 +88,7 @@ export default function AutoBattle() {
     if (!battle.lastReward) return;
     // если это новое убийство (не то же что в прошлый рендер)
     if (lastRewardRef.current && lastRewardRef.current !== battle.lastReward) {
+      if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
       // запускаем тряску в rAF, чтобы не синхронно в теле эффекта
       const raf = requestAnimationFrame(() => {
         setShakeScreen(true);
@@ -293,7 +294,7 @@ export default function AutoBattle() {
                     transition={{ duration: 0.1 }}
                   />
                 </div>
-                <div className="text-[9px] text-zinc-400 font-mono mt-0.5">
+                <div className="text-[11px] text-zinc-400 font-mono mt-0.5">
                   {enemyHp}/{enemyMaxHp}
                 </div>
               </motion.div>
@@ -342,7 +343,7 @@ export default function AutoBattle() {
         </AnimatePresence>
 
         {/* надпись авто-боя */}
-        <div className="absolute top-2 left-2 text-[9px] uppercase tracking-widest text-zinc-500 font-mono">
+        <div className="absolute top-2 left-2 text-[11px] uppercase tracking-widest text-zinc-500 font-mono">
           AUTO
         </div>
       </div>
@@ -447,7 +448,7 @@ export default function AutoBattle() {
 function SkillsList({ heroLevel }: { heroLevel: number }) {
   return (
     <div>
-      <div className="text-[9px] uppercase tracking-wider text-zinc-500 font-mono mb-1">
+      <div className="text-[11px] uppercase tracking-wider text-zinc-500 font-mono mb-1">
         Навыки
       </div>
       <div className="grid grid-cols-5 gap-1">
@@ -467,7 +468,7 @@ function SkillsList({ heroLevel }: { heroLevel: number }) {
             >
               <div className="text-base leading-none">{unlocked ? skill.emoji : "🔒"}</div>
               <div
-                className="text-[8px] font-mono leading-tight mt-0.5"
+                className="text-[10px] font-mono leading-tight mt-0.5"
                 style={{ color: unlocked ? skill.color : "#64748b" }}
               >
                 {skill.name.split(" ")[0]}
@@ -523,7 +524,7 @@ function ComboIndicator() {
         </div>
       </div>
       {active && combo.count >= 3 && (
-        <span className="text-[9px] text-amber-300 font-mono">
+        <span className="text-[11px] text-amber-300 font-mono">
           +{(combo.count * 10)}% редкость
         </span>
       )}

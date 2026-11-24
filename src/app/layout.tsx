@@ -4,6 +4,9 @@ import { Toaster } from "@/components/ui/toaster";
 import PWARegister from "@/components/game/PWARegister";
 import ErrorBoundary from "@/components/game/ErrorBoundary";
 import AutosaveIndicator from "@/components/game/AutosaveIndicator";
+import Onboarding from "@/components/game/Onboarding";
+import { SoundToggle } from "@/components/game/Sound";
+import RarityFlash from "@/components/game/RarityFlash";
 
 export const metadata: Metadata = {
   title: "Сундучный Вор: Тёмное Фэнтези",
@@ -49,6 +52,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <Toaster />
           <PWARegister />
           <AutosaveIndicator />
+          <Onboarding />
+          <SoundToggle />
+          <RarityFlash />
         </ErrorBoundary>
       </body>
     </html>

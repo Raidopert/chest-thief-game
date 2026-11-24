@@ -233,9 +233,9 @@ export default function Home() {
         {/* Вкладки */}
         <GameTabs
           huntTab={
-            <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-3 md:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4">
               {/* Кликер — компактный слева на десктопе */}
-              <div className="rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] p-2 md:p-3 flex flex-col items-center">
+              <div className="rounded-2xl border border-zinc-700 bg-gradient-to-b from-[#15131c] to-[#08060a] p-3 md:p-4 flex flex-col items-center">
                 <ClickerScene />
               </div>
               {/* Поле сундуков */}
@@ -243,7 +243,7 @@ export default function Home() {
             </div>
           }
           heroTab={
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <HeroInventory />
               <AutoBattle />
             </div>

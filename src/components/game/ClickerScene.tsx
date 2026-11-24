@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Sounds } from "./Sound";
 import { useGameStore } from "@/lib/game/store";
 import { KEY_TYPES } from "@/lib/game/config";
 
@@ -29,6 +30,7 @@ export default function ClickerScene() {
       setTimeout(() => setFloats((prev) => prev.filter((f) => f.id !== fid)), 1100);
       const did = ++dropIdRef.current;
       setRecentDrops((prev) => [{ id: did, key: kt.name, color: kt.color }, ...prev].slice(0, 6));
+      Sounds.keyDrop();
       setTimeout(() => setRecentDrops((prev) => prev.filter((d) => d.id !== did)), 3500);
     } else {
       const fid = ++floatCounter;
@@ -36,7 +38,7 @@ export default function ClickerScene() {
       setFloats((prev) => [...prev, { id: fid, x, y, text: msgs[Math.floor(Math.random() * msgs.length)], color: "#9ca3af" }]);
       setTimeout(() => setFloats((prev) => prev.filter((f) => f.id !== fid)), 900);
     }
-    setVibrate(true);
+    setVibrate(true); Sounds.click(); if (navigator.vibrate) navigator.vibrate(30);
     setTimeout(() => setVibrate(false), 90);
   };
 

@@ -217,7 +217,7 @@ export default function HeroInventory({ onPickItemForSlot }: Props) {
                   {item.emoji}
                 </span>
               ) : (
-                <span className="text-[9px] text-zinc-500 font-mono uppercase">
+                <span className="text-[11px] text-zinc-500 font-mono uppercase">
                   {slot.name.split(" ")[0]}
                 </span>
               )}
@@ -248,7 +248,7 @@ export default function HeroInventory({ onPickItemForSlot }: Props) {
 function Stat({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="rounded-md bg-black/30 border border-zinc-700/40 py-1">
-      <div className="text-[8px] uppercase tracking-wider text-zinc-500 font-mono leading-none">
+      <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono leading-none">
         {label}
       </div>
       <div className="text-sm font-bold font-mono leading-tight" style={{ color }}>
@@ -278,7 +278,7 @@ function ActiveSets() {
 
   return (
     <div className="mb-3 space-y-1">
-      <div className="text-[9px] uppercase tracking-wider text-zinc-500 font-mono mb-1">
+      <div className="text-[11px] uppercase tracking-wider text-zinc-500 font-mono mb-1">
         Сеты
       </div>
       {active.map(({ setId, def, count }) => {
@@ -313,7 +313,7 @@ function ActiveSets() {
                 return (
                   <span
                     key={threshold}
-                    className="text-[8px] px-1 py-0.5 rounded font-mono"
+                    className="text-[10px] px-1 py-0.5 rounded font-mono"
                     style={{
                       background: active2 ? def.color + "33" : "rgba(0,0,0,0.3)",
                       color: active2 ? def.color : "#64748b",

@@ -173,9 +173,14 @@ export default function Home() {
   }, []);
 
   if (!hydrated) {
+    // Fallback через 2 сек если persist не загрузился — показываем игру в любом случае
+    setTimeout(() => { if (!useGameStore.getState().hydrated) useGameStore.setState({ hydrated: true }); }, 2000);
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0705] text-amber-200/60 text-sm">
-        Загрузка игры...
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0705] text-zinc-500 text-sm">
+        <div className="flex flex-col items-center gap-3">
+          <div className="text-3xl animate-pulse">💀</div>
+          <div>Загрузка склепа...</div>
+        </div>
       </div>
     );
   }

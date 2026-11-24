@@ -25,9 +25,12 @@ export default function LootInventory() {
   const inventory = useGameStore((s) => s.inventory);
   const sellStack = useGameStore((s) => s.sellStack);
   const sellAllByRarity = useGameStore((s) => s.sellAllByRarity);
+  const craftItems = useGameStore((s) => s.craftItems);
+  const sacrificeItem = useGameStore((s) => s.sacrificeItem);
   const lastDrop = useGameStore((s) => s.lastDrop);
   const [filter, setFilter] = useState<RarityId | "all">("all");
 
+  // Smart inventory: сортировка по ценности внутри каждой редкости
   const grouped = useMemo(() => {
     const map = new Map<RarityId, typeof inventory>();
     for (const r of RARITY_ORDER) map.set(r, []);
@@ -35,6 +38,14 @@ export default function LootInventory() {
       const list = map.get(stack.rarity) ?? [];
       list.push(stack);
       map.set(stack.rarity, list);
+    }
+    // Сортируем каждую группу: сначала экипируемые (по убыванию ценности), потом расходники
+    for (const [rarity, stacks] of map.entries()) {
+      stacks.sort((a, b) => {
+        if (a.slot && !b.slot) return -1;
+        if (!a.slot && b.slot) return 1;
+        return b.baseValue - a.baseValue;
+      });
     }
     return map;
   }, [inventory]);
@@ -173,17 +184,35 @@ export default function LootInventory() {
                             )}
                           </div>
                         </div>
-                        {/* кнопки действий */}
-                        <div className="mt-1.5 flex gap-1">
+                        {/* Quick Actions — 3 иконки-кнопки */}
+                        <div className="mt-2 flex gap-1.5">
                           <button
                             onClick={() => sellStack(st.uid)}
-                            className="flex-1 text-[11px] py-0.5 rounded font-mono bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-200 transition-colors"
-                            title="Продать весь стэк"
+                            className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-200 transition-colors text-xs font-bold"
+                            title={`Продать ×${st.count} за ${(st.baseValue * st.count).toLocaleString("ru-RU")}💰`}
                           >
-                            продать
+                            💰 Продать
                           </button>
                           {canEquip && (
                             <EquipButton stackUid={st.uid} itemSlot={st.slot as EquipSlotId} />
+                          )}
+                          {canEquip && st.count >= 5 && (
+                            <button
+                              onClick={() => craftItems(st.itemId)}
+                              className="flex items-center justify-center px-2 py-1.5 rounded-lg bg-amber-900/40 hover:bg-amber-800/60 text-amber-200 transition-colors text-xs font-bold"
+                              title={`Крафт 5→1 (нужно 5, есть ${st.count})`}
+                            >
+                              ⚗ Крафт
+                            </button>
+                          )}
+                          {canEquip && (
+                            <button
+                              onClick={() => sacrificeItem(st.uid, 1)}
+                              className="flex items-center justify-center px-2 py-1.5 rounded-lg bg-purple-900/40 hover:bg-purple-800/60 text-purple-200 transition-colors text-xs font-bold"
+                              title="Пожертвовать 1 шт ради удачи"
+                            >
+                              🙏
+                            </button>
                           )}
                         </div>
                       </motion.div>
@@ -264,10 +293,10 @@ function EquipButton({ stackUid, itemSlot }: { stackUid: string; itemSlot: Equip
   return (
     <button
       onClick={() => equipItem(stackUid, firstFree.id)}
-      className="flex-1 text-[11px] py-0.5 rounded font-mono bg-red-950/40 hover:bg-red-800/60 text-zinc-300 transition-colors"
+      className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-cyan-900/40 hover:bg-cyan-800/60 text-cyan-200 transition-colors text-xs font-bold"
       title={`Надеть в слот: ${firstFree.name}`}
     >
-      надеть
+      ⚔ Надеть
     </button>
   );
 }

@@ -263,6 +263,26 @@ export const ITEMS_BY_RARITY: Record<RarityId, LootItem[]> = RARITIES.reduce(
 
 export const TOTAL_ITEMS = ALL_ITEMS.length;
 
+// Маппинг эмодзи на SVG иконку
+const EMOJI_TO_ICON: Record<string, string> = {
+  '⚔': 'sword', '🔪': 'dagger', '🏹': 'bow', '🪄': 'staff',
+  '🔨': 'hammer', '🔱': 'spear', '🪓': 'axe',
+  '🛡': 'shield', '⛑': 'helmet', '👑': 'crown',
+  '🦺': 'armor', '🥾': 'boots', '🟫': 'belt',
+  '📿': 'amulet', '💍': 'ring', '🔮': 'crystal',
+  '🧪': 'potion', '💧': 'potion', '💪': 'potion',
+  '🍀': 'potion', '💨': 'potion', '🍷': 'potion',
+  '💎': 'crystal', '🪬': 'scroll', '📜': 'scroll',
+  '🧩': 'crystal', '🔆': 'crystal', '🪙': 'crystal',
+  '🧿': 'amulet', '✨': 'crystal',
+};
+
+export function getIconId(emoji: string): string | null {
+  return EMOJI_TO_ICON[emoji] ?? null;
+}
+
+
+
 // Категория для надевания (используется в UI)
 export function itemCategory(itemId: string): ItemCategory {
   const it = ALL_ITEMS.find((i) => i.id === itemId);

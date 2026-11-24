@@ -61,7 +61,7 @@ export default function HeroInventory({ onPickItemForSlot }: Props) {
     <div
       className="relative rounded-2xl border border-zinc-700 overflow-hidden p-3 md:p-4"
       style={{
-        backgroundImage: "url('bg/hero-bg.png')",
+        backgroundImage: "url('bg/hero-bg-new.png')",
         backgroundSize: "cover",
         backgroundPosition: "center top",
       }}

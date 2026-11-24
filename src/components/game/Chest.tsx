@@ -130,10 +130,10 @@ export default function Chest({ chest }: Props) {
       <div
         className="relative w-full h-full rounded-xl cursor-pointer transition-transform overflow-hidden"
         style={{
-          border: `2px solid ${visual.accent}`,
+          border: `2px solid ${visual.accent}aa`,
           boxShadow: canOpen
-            ? `0 0 22px ${visual.accent}cc, 0 0 8px ${visual.accent}99, 0 4px 12px rgba(0,0,0,0.7)`
-            : `0 0 8px ${visual.accent}66, 0 4px 8px rgba(0,0,0,0.6)`,
+            ? `0 0 25px ${visual.accent}dd, 0 0 10px ${visual.accent}aa, 0 4px 16px rgba(0,0,0,0.8), inset 0 0 15px rgba(0,0,0,0.5)`
+            : `0 0 10px ${visual.accent}66, 0 4px 10px rgba(0,0,0,0.7), inset 0 0 15px rgba(0,0,0,0.5)`,
           animation: canOpen ? "chestPulse 1.6s ease-in-out infinite" : "none",
         }}
       >

@@ -130,7 +130,7 @@ export default function ResourceBar({ onOpenShop, onOpenQuests, onOpenAltar, onO
                 key={k.id}
                 onClick={() => isAvailable && setSelectedKey(k.id)}
                 disabled={!isAvailable}
-                className={`relative rounded-lg p-2 flex flex-col items-center gap-1 transition-all ${
+                className={`relative rounded-xl p-2 flex flex-col items-center gap-1 transition-all border-2 ${
                   isActive
                     ? "ring-2 ring-amber-400 scale-[1.03]"
                     : isAvailable
@@ -138,6 +138,7 @@ export default function ResourceBar({ onOpenShop, onOpenQuests, onOpenAltar, onO
                       : "opacity-40 cursor-not-allowed ring-1 ring-zinc-800"
                 }`}
                 style={{
+                  borderColor: isActive ? k.color + 'aa' : 'rgba(63,63,70,0.5)',
                   background: isActive
                     ? `linear-gradient(180deg, ${k.color}33, ${k.color}11)`
                     : "rgba(0,0,0,0.3)",

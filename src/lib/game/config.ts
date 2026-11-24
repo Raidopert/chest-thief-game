@@ -221,16 +221,16 @@ export interface ChestVisual {
 // Готическая тема: 10 видов в стиле Dark Fantasy (Diablo/Bloodborne)
 // 3 PNG-картинки + CSS-фильтры дают 10 разных-looking сундуков
 export const CHEST_VISUALS: ChestVisual[] = [
-  { id: "wooden",    name: "Гнилой",        color: "#3d2817", accent: "#7a5a3a", sizeRange: [70, 100], baseEmoji: "⚰", image: "bg/chest-iron.png",   filter: "saturate(0.5) brightness(0.65)" },
-  { id: "iron",      name: "Окованный",     color: "#27272a", accent: "#71717a", sizeRange: [80, 110], baseEmoji: "⛓", image: "bg/chest-iron.png",   filter: "none" },
-  { id: "mossy",     name: "Чумной",        color: "#365314", accent: "#84cc16", sizeRange: [70, 105], baseEmoji: "☣", image: "bg/chest-iron.png",   filter: "hue-rotate(70deg) saturate(1.6) brightness(0.85)" },
-  { id: "steel",     name: "Могильный",     color: "#3f3f46", accent: "#a1a1aa", sizeRange: [85, 115], baseEmoji: "🪦", image: "bg/chest-iron.png",   filter: "brightness(1.25) saturate(0.4)" },
-  { id: "silver",    name: "Инквизиторский",color: "#4b5563", accent: "#e5e7eb", sizeRange: [90, 120], baseEmoji: "✝", image: "bg/chest-iron.png",   filter: "brightness(1.45) saturate(0.15) contrast(1.1)" },
-  { id: "golden",    name: "Реликварий",    color: "#854d0e", accent: "#fbbf24", sizeRange: [95, 125], baseEmoji: "⛪", image: "bg/chest-gold.png",   filter: "none" },
-  { id: "crimson",   name: "Кровавый",      color: "#7f1d1d", accent: "#dc2626", sizeRange: [85, 115], baseEmoji: "🩸", image: "bg/chest-cursed.png", filter: "hue-rotate(-15deg) brightness(1.1) saturate(1.3)" },
-  { id: "shadow",    name: "Проклятый",     color: "#18181b", accent: "#7c3aed", sizeRange: [80, 120], baseEmoji: "👁", image: "bg/chest-cursed.png", filter: "brightness(0.55) hue-rotate(40deg)" },
-  { id: "azure",     name: "Ледяной",       color: "#0c4a6e", accent: "#38bdf8", sizeRange: [90, 120], baseEmoji: "❄", image: "bg/chest-cursed.png", filter: "hue-rotate(180deg) brightness(1.15) saturate(1.2)" },
-  { id: "celestial", name: "Адский",        color: "#450a0a", accent: "#f97316", sizeRange: [100, 130], baseEmoji: "🔥", image: "bg/chest-gold.png",   filter: "hue-rotate(-30deg) brightness(1.1) saturate(1.4) contrast(1.15)" },
+  { id: "wooden",    name: "Гнилой",         color: "#3d2817", accent: "#7a5a3a", sizeRange: [70, 100], baseEmoji: "⚰", image: "bg/chest-rotten.png",    filter: "saturate(0.6) brightness(0.7)" },
+  { id: "iron",      name: "Окованный",      color: "#27272a", accent: "#71717a", sizeRange: [80, 110], baseEmoji: "⛓", image: "bg/chest-heavy.png",     filter: "none" },
+  { id: "mossy",     name: "Чумной",         color: "#365314", accent: "#84cc16", sizeRange: [70, 105], baseEmoji: "☣", image: "bg/chest-rotten.png",    filter: "hue-rotate(60deg) saturate(1.8) brightness(0.8)" },
+  { id: "steel",     name: "Могильный",      color: "#3f3f46", accent: "#a1a1aa", sizeRange: [85, 115], baseEmoji: "🪦", image: "bg/chest-heavy.png",     filter: "brightness(1.2) saturate(0.3)" },
+  { id: "silver",    name: "Инквизиторский", color: "#4b5563", accent: "#e5e7eb", sizeRange: [90, 120], baseEmoji: "✝", image: "bg/chest-heavy.png",     filter: "brightness(1.4) saturate(0.1) contrast(1.1)" },
+  { id: "golden",    name: "Реликварий",     color: "#854d0e", accent: "#fbbf24", sizeRange: [95, 125], baseEmoji: "⛪", image: "bg/chest-reliquary.png", filter: "none" },
+  { id: "crimson",   name: "Кровавый",       color: "#7f1d1d", accent: "#dc2626", sizeRange: [85, 115], baseEmoji: "🩸", image: "bg/chest-demonic.png",   filter: "hue-rotate(-10deg) brightness(1.1) saturate(1.4)" },
+  { id: "shadow",    name: "Проклятый",      color: "#18181b", accent: "#7c3aed", sizeRange: [80, 120], baseEmoji: "👁", image: "bg/chest-demonic.png",   filter: "brightness(0.5) hue-rotate(30deg)" },
+  { id: "azure",     name: "Ледяной",        color: "#0c4a6e", accent: "#38bdf8", sizeRange: [90, 120], baseEmoji: "❄", image: "bg/chest-demonic.png",   filter: "hue-rotate(180deg) brightness(1.15) saturate(1.3)" },
+  { id: "celestial", name: "Адский",         color: "#450a0a", accent: "#f97316", sizeRange: [100, 130], baseEmoji: "🔥", image: "bg/chest-reliquary.png", filter: "hue-rotate(-25deg) brightness(1.1) saturate(1.5) contrast(1.2)" },
 ];
 
 // Скрытое качество сундука (1-7) — игрок не видит, влияет на редкость лута

@@ -16,6 +16,7 @@ import AltarModal from "@/components/game/AltarModal";
 import PrestigeModal from "@/components/game/PrestigeModal";
 import UpgradesModal from "@/components/game/UpgradesModal";
 import EventBanner from "@/components/game/EventBanner";
+import QuickSellFab from "@/components/game/QuickSellFab";
 import NoticeToast from "@/components/game/NoticeToast";
 import {
   DUNGEON_KILLS_PER_FLOOR,
@@ -233,7 +234,7 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Панель ресурсов — всегда видна над вкладками */}
+        {/* Панель ресурсов — компактная, включает этаж + престиж */}
         <ResourceBar
           onOpenShop={() => setShopOpen(true)}
           onOpenQuests={() => setQuestsOpen(true)}
@@ -241,9 +242,6 @@ export default function Home() {
           onOpenPrestige={() => setPrestigeOpen(true)}
           onOpenUpgrades={() => setUpgradesOpen(true)}
         />
-
-        {/* Индикатор этажа подземелья */}
-        <FloorIndicator enemiesKilled={enemiesKilled} />
 
         {/* Баннеры событий */}
         <EventBanner />
@@ -297,39 +295,7 @@ export default function Home() {
       <UpgradesModal open={upgradesOpen} onClose={() => setUpgradesOpen(false)} />
       <LootReveal />
       <NoticeToast />
-    </div>
-  );
-}
-
-function FloorIndicator({ enemiesKilled }: { enemiesKilled: number }) {
-  const floor = Math.floor(enemiesKilled / DUNGEON_KILLS_PER_FLOOR) + 1;
-  const progressInFloor = enemiesKilled % DUNGEON_KILLS_PER_FLOOR;
-  const pct = (progressInFloor / DUNGEON_KILLS_PER_FLOOR) * 100;
-  const name = DUNGEON_NAMES[Math.min(floor - 1, DUNGEON_NAMES.length - 1)];
-  return (
-    <div className="rounded-2xl border border-purple-900/40 bg-gradient-to-r from-purple-950/40 to-[#0f0d15] p-2.5 flex items-center gap-3">
-      <div className="flex flex-col items-center min-w-[60px]">
-        <div className="text-[9px] uppercase tracking-widest text-purple-400/80 font-mono">
-          Этаж
-        </div>
-        <div className="text-purple-200 font-black text-xl font-mono leading-none">
-          {floor}
-        </div>
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-[11px] text-zinc-300 font-bold truncate">
-          {name}
-        </div>
-        <div className="mt-1 h-1.5 bg-black/60 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-purple-700 to-purple-400 transition-all"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <div className="text-[9px] text-zinc-500 font-mono mt-0.5">
-          {progressInFloor}/{DUNGEON_KILLS_PER_FLOOR} до следующего этажа · ×{(Math.pow(1.5, floor - 1)).toFixed(2)} HP врагов
-        </div>
-      </div>
+      <QuickSellFab />
     </div>
   );
 }

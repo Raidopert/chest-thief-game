@@ -298,3 +298,55 @@
   background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.3), transparent);
   margin: 0.5rem 0;
 }
+
+/* === ГОТИЧЕСКИЕ КНОПКИ С ОРНАМЕНТОМ === */
+.gothic-ornate-btn {
+  position: relative;
+  font-family: 'GothicSerif', Georgia, serif;
+  letter-spacing: 0.04em;
+  border-radius: 0.6rem;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+.gothic-ornate-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(255,255,255,0.03) 100%);
+  pointer-events: none;
+}
+.gothic-ornate-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.gothic-ornate-btn:active {
+  transform: translateY(0);
+}
+
+/* Угловые засечки на кнопках */
+.gothic-ornate-btn::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px; right: 2px; bottom: 2px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Готическая панель с орнаментом */
+.gothic-ornate-panel {
+  position: relative;
+  background: linear-gradient(135deg, rgba(28,25,35,0.96), rgba(15,13,21,0.98));
+  border: 1px solid rgba(120,80,160,0.2);
+  border-radius: 1rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.gothic-ornate-panel::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(168,85,247,0.08);
+  border-radius: calc(1rem - 3px);
+  pointer-events: none;
+}

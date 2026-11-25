@@ -99,89 +99,23 @@ export default function HeroInventory({ onPickItemForSlot }: Props) {
           aspectRatio: "0.75 / 1",
         }}
       >
-        <svg viewBox="0 0 200 280" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid meet">
-          {/* фон — каменный постамент */}
-          <defs>
-            <radialGradient id="heroSpotlight" cx="50%" cy="50%" r="60%">
-              <stop offset="0%" stopColor="rgba(220,38,38,0.18)" />
-              <stop offset="100%" stopColor="rgba(220,38,38,0)" />
-            </radialGradient>
-            <linearGradient id="armorPlate" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#3a3a45" />
-              <stop offset="100%" stopColor="#1a1a22" />
-            </linearGradient>
-          </defs>
-          <ellipse cx="100" cy="270" rx="60" ry="8" fill="rgba(0,0,0,0.6)" />
+        {/* AI-арт героя вместо SVG силуэта */}
+        <div
+          className="absolute inset-0 rounded-xl overflow-hidden"
+          style={{
+            backgroundImage: "url('bg/hero-art.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center top",
+            opacity: 0.85,
+          }}
+        />
+        {/* Затемнение по краям для читаемости ячеек */}
+        <div className="absolute inset-0 pointer-events-none rounded-xl" style={{
+          background: "radial-gradient(ellipse at center, transparent 30%, rgba(8,6,10,0.6) 100%)",
+        }} />
 
-          {/* === ГОТИЧЕСКИЙ ГЕРОЙ В ДОСПЕХАХ === */}
-          <g stroke="#0a0a0f" strokeWidth="1.5">
-            {/* тело — кираса (нагрудник) */}
-            <path d="M 78 70 Q 100 65 122 70 L 122 150 Q 100 156 78 150 Z" fill="url(#armorPlate)" />
-            {/* нагрудный крест — готический элемент */}
-            <path d="M 100 80 L 100 140 M 88 110 L 112 110" stroke="#71717a" strokeWidth="2" fill="none" />
-            {/* заклёпки на кирасе */}
-            {[[85, 80], [115, 80], [85, 95], [115, 95], [85, 130], [115, 130]].map(([x, y], i) => (
-              <circle key={i} cx={x} cy={y} r="1.5" fill="#71717a" stroke="none" />
-            ))}
-            {/* наплечники — выраженные латные */}
-            <ellipse cx="78" cy="74" rx="10" ry="8" fill="url(#armorPlate)" />
-            <ellipse cx="122" cy="74" rx="10" ry="8" fill="url(#armorPlate)" />
-
-            {/* голова — в шлеме-саладе с забралом */}
-            <ellipse cx="100" cy="40" r="18" fill="url(#armorPlate)" />
-            {/* шлем — верхняя часть */}
-            <path d="M 82 38 Q 100 22 118 38 L 118 42 L 82 42 Z" fill="#1c1c25" />
-            {/* забрало с прорезью для глаз */}
-            <rect x="86" y="38" width="28" height="8" fill="#0a0a0f" />
-            <rect x="90" y="41" width="20" height="1.5" fill="#dc2626" opacity="0.8" />
-            {/* гребень на шлеме */}
-            <path d="M 100 22 L 100 36" stroke="#dc2626" strokeWidth="1.5" fill="none" />
-
-            {/* шея — горжет */}
-            <rect x="94" y="55" width="12" height="14" fill="#2a2a35" />
-
-            {/* руки по швам — латные сегменты */}
-            <path d="M 78 72 Q 70 75 68 100 L 70 145 Q 76 148 78 145 L 78 72 Z" fill="url(#armorPlate)" />
-            <path d="M 122 72 Q 130 75 132 100 L 130 145 Q 124 148 122 145 L 122 72 Z" fill="url(#armorPlate)" />
-            {/* сегменты локтя */}
-            <ellipse cx="69" cy="100" rx="5" ry="4" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="1" />
-            <ellipse cx="131" cy="100" rx="5" ry="4" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="1" />
-            {/* кисти — латные перчатки */}
-            <ellipse cx="71" cy="150" rx="7" ry="6" fill="url(#armorPlate)" />
-            <ellipse cx="129" cy="150" rx="7" ry="6" fill="url(#armorPlate)" />
-
-            {/* пояс — кожаный с пряжкой */}
-            <rect x="80" y="148" width="40" height="8" fill="#3a2a18" stroke="#0a0a0f" strokeWidth="1" />
-            {/* пряжка с крестом */}
-            <rect x="96" y="148" width="8" height="8" fill="#71717a" stroke="#0a0a0f" strokeWidth="0.5" />
-            <path d="M 100 149 L 100 155 M 97 152 L 103 152" stroke="#0a0a0f" strokeWidth="0.5" />
-
-            {/* ноги — поножи */}
-            <path d="M 84 156 L 84 230 Q 88 232 92 230 L 92 156 Z" fill="url(#armorPlate)" />
-            <path d="M 108 156 L 108 230 Q 112 232 116 230 L 116 156 Z" fill="url(#armorPlate)" />
-            {/* наколенники */}
-            <ellipse cx="88" cy="190" rx="5" ry="4" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="1" />
-            <ellipse cx="112" cy="190" rx="5" ry="4" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="1" />
-
-            {/* сапоги — латные ботинки */}
-            <ellipse cx="88" cy="235" rx="9" ry="6" fill="#2a2a35" stroke="#0a0a0f" strokeWidth="1.5" />
-            <ellipse cx="112" cy="235" rx="9" ry="6" fill="#2a2a35" stroke="#0a0a0f" strokeWidth="1.5" />
-
-            {/* плащ за спиной */}
-            <path
-              d="M 70 70 Q 60 120 65 180 Q 75 230 78 250 L 122 250 Q 125 230 135 180 Q 140 120 130 70 Z"
-              fill="#1a0a0a"
-              stroke="#0a0a0f"
-              strokeWidth="1"
-              opacity="0.7"
-            />
-          </g>
-
-          {/* кровавое свечение */}
-          <rect width="200" height="280" fill="url(#heroSpotlight)" pointerEvents="none" />
-        </svg>
-
-        {/* ячейки экипировки поверх силуэта */}
+        {/* ячейки экипировки поверх AI-арта героя */}
+        {/* ячейки экипировки поверх AI-арта героя */}
         {/* координаты ячеек — в % от 0..100 по x и y, где y=100 это низ силуэта (280), y=104 для артефактов снизу */}
         {EQUIP_SLOTS.map((slot) => {
           const item = equipped[slot.id];

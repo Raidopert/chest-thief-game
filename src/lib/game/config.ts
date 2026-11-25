@@ -227,10 +227,10 @@ export const CHEST_VISUALS: ChestVisual[] = [
   { id: "steel",     name: "Могильный",      color: "#3f3f46", accent: "#a1a1aa", sizeRange: [85, 115], baseEmoji: "🪦", image: "bg/chest-heavy.png",     filter: "brightness(1.2) saturate(0.3)" },
   { id: "silver",    name: "Инквизиторский", color: "#4b5563", accent: "#e5e7eb", sizeRange: [90, 120], baseEmoji: "✝", image: "bg/chest-heavy.png",     filter: "brightness(1.4) saturate(0.1) contrast(1.1)" },
   { id: "golden",    name: "Реликварий",     color: "#854d0e", accent: "#fbbf24", sizeRange: [95, 125], baseEmoji: "⛪", image: "bg/chest-reliquary.png", filter: "none" },
-  { id: "crimson",   name: "Кровавый",       color: "#7f1d1d", accent: "#dc2626", sizeRange: [85, 115], baseEmoji: "🩸", image: "bg/chest-demonic.png",   filter: "hue-rotate(-10deg) brightness(1.1) saturate(1.4)" },
+  { id: "crimson",   name: "Кровавый",       color: "#7f1d1d", accent: "#dc2626", sizeRange: [85, 115], baseEmoji: "🩸", image: "bg/chest-blood.png",     filter: "none" },
   { id: "shadow",    name: "Проклятый",      color: "#18181b", accent: "#7c3aed", sizeRange: [80, 120], baseEmoji: "👁", image: "bg/chest-demonic.png",   filter: "brightness(0.5) hue-rotate(30deg)" },
-  { id: "azure",     name: "Ледяной",        color: "#0c4a6e", accent: "#38bdf8", sizeRange: [90, 120], baseEmoji: "❄", image: "bg/chest-demonic.png",   filter: "hue-rotate(180deg) brightness(1.15) saturate(1.3)" },
-  { id: "celestial", name: "Адский",         color: "#450a0a", accent: "#f97316", sizeRange: [100, 130], baseEmoji: "🔥", image: "bg/chest-reliquary.png", filter: "hue-rotate(-25deg) brightness(1.1) saturate(1.5) contrast(1.2)" },
+  { id: "azure",     name: "Ледяной",        color: "#0c4a6e", accent: "#38bdf8", sizeRange: [90, 120], baseEmoji: "❄", image: "bg/chest-frozen.png",    filter: "none" },
+  { id: "celestial", name: "Адский",         color: "#450a0a", accent: "#f97316", sizeRange: [100, 130], baseEmoji: "🔥", image: "bg/chest-demonic.png",   filter: "hue-rotate(-10deg) brightness(1.1) saturate(1.5)" },
 ];
 
 // Скрытое качество сундука (1-7) — игрок не видит, влияет на редкость лута

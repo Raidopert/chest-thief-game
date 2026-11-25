@@ -87,7 +87,7 @@ export default function ResourceBar({ onOpenShop, onOpenQuests, onOpenAltar, onO
                 key={k.id}
                 onClick={() => isAvailable && setSelectedKey(k.id)}
                 disabled={!isAvailable}
-                className={`relative rounded-xl p-2.5 flex flex-col items-center gap-1 transition-all min-h-[56px] ${
+                className={`gothic-ornate-btn relative rounded-xl p-2.5 flex flex-col items-center gap-1 transition-all min-h-[56px] ${
                   isActive
                     ? "ring-2 scale-[1.05]"
                     : isAvailable

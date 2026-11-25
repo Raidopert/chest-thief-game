@@ -61,10 +61,10 @@ export default function GameTabs({ huntTab, heroTab, lootTab }: Props) {
 
   return (
     <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
-      <TabsList className="w-full h-auto grid grid-cols-3 bg-[#15131c]/95 border border-zinc-700 p-1 gap-1">
+      <TabsList className="w-full h-auto grid grid-cols-3 rounded-xl p-1 gap-1" style={{ background: "linear-gradient(135deg, rgba(28,25,35,0.95), rgba(15,13,21,0.95))", border: "2px solid rgba(168,85,247,0.25)", boxShadow: "0 4px 16px rgba(0,0,0,0.4), inset 0 0 12px rgba(0,0,0,0.3)" }}>
         <TabsTrigger
           value="hunt"
-          className="flex flex-col items-center gap-0.5 py-2 data-[state=active]:bg-red-950/40 data-[state=active]:text-zinc-300 text-zinc-400"
+          className="flex flex-col items-center gap-0.5 py-2 data-[state=active]:bg-purple-900/30 data-[state=active]:text-purple-200 text-zinc-400"
         >
           <span className="text-xs font-bold tracking-wide">🏹 Добыча</span>
           <span className="text-[9px] font-mono text-zinc-500">
@@ -73,7 +73,7 @@ export default function GameTabs({ huntTab, heroTab, lootTab }: Props) {
         </TabsTrigger>
         <TabsTrigger
           value="hero"
-          className="flex flex-col items-center gap-0.5 py-2 data-[state=active]:bg-red-950/40 data-[state=active]:text-zinc-300 text-zinc-400"
+          className="flex flex-col items-center gap-0.5 py-2 data-[state=active]:bg-purple-900/30 data-[state=active]:text-purple-200 text-zinc-400"
         >
           <span className="text-xs font-bold tracking-wide">⚔ Герой</span>
           <span className="text-[9px] font-mono text-zinc-500">
@@ -82,7 +82,7 @@ export default function GameTabs({ huntTab, heroTab, lootTab }: Props) {
         </TabsTrigger>
         <TabsTrigger
           value="loot"
-          className="flex flex-col items-center gap-0.5 py-2 data-[state=active]:bg-red-950/40 data-[state=active]:text-zinc-300 text-zinc-400"
+          className="flex flex-col items-center gap-0.5 py-2 data-[state=active]:bg-purple-900/30 data-[state=active]:text-purple-200 text-zinc-400"
         >
           <span className="text-xs font-bold tracking-wide">🎒 Лут</span>
           <span className="text-[9px] font-mono text-zinc-500">

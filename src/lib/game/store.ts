@@ -502,23 +502,25 @@ export const useGameStore = create<GameState>()(
         const visualDef = CHEST_VISUALS.find((v) => v.id === visual)!;
         const size = Math.round(randRange(visualDef.sizeRange[0], visualDef.sizeRange[1]));
 
-        // Ищем позицию, не пересекающуюся с существующими сундуками.
-        // Анти-пересечение сундуков. Используем процентное расстояние по диагонали
-        // + прямоугольную проверку. Запас учитывает размер самого большого сундука.
-        const MIN_DIST = 24; // минимальное евклидово расстояние в % между центрами
+        // Анти-пересечение сундуков — используем прямоугольную проверку
+        // с запасом по размеру сундука. Поле ~700×400px, сундук до 130px.
+        // В процентах: 130px / 700px ≈ 19% ширины, 130px / 400px ≈ 33% высоты.
+        // Минимальное расстояние = половина суммы размеров двух сундуков + 5% зазор.
+        const MIN_DIST_X = 28; // % по горизонтали (сундук + зазор)
+        const MIN_DIST_Y = 40; // % по вертикали (поле короче, сундуки крупнее относительно)
         let chosenX = 0;
         let chosenY = 0;
         let foundValid = false;
         const activeChests = state.chests.filter((c) => !c.opened);
-        for (let attempt = 0; attempt < 40; attempt++) {
-          const x = randRange(8, 82);
-          const y = randRange(16, 78);
+        for (let attempt = 0; attempt < 50; attempt++) {
+          const x = randRange(6, 84);
+          const y = randRange(18, 76);
           let ok = true;
           for (const c of activeChests) {
-            const dx = c.x - x;
-            const dy = c.y - y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < MIN_DIST) {
+            const dx = Math.abs(c.x - x);
+            const dy = Math.abs(c.y - y);
+            // Пересечение только если оба расстояния меньше минимальных
+            if (dx < MIN_DIST_X && dy < MIN_DIST_Y) {
               ok = false;
               break;
             }

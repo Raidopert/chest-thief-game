@@ -254,3 +254,47 @@
   background-size: cover;
   background-position: center;
 }
+
+/* === ГОТИЧЕСКИЙ ШРИФТ === */
+@font-face {
+  font-family: 'GothicSerif';
+  src: url('/fonts/ptserif-regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'GothicSerif';
+  src: url('/fonts/ptserif-bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Применяем готический шрифт к заголовкам */
+.gothic-font {
+  font-family: 'GothicSerif', Georgia, serif;
+}
+
+/* Готические кнопки */
+.gothic-btn {
+  position: relative;
+  font-family: 'GothicSerif', Georgia, serif;
+  letter-spacing: 0.05em;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+.gothic-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+}
+.gothic-btn:active {
+  transform: translateY(0);
+}
+
+/* Готический разделитель */
+.gothic-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.3), transparent);
+  margin: 0.5rem 0;
+}

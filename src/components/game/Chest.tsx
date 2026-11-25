@@ -118,10 +118,10 @@ export default function Chest({ chest }: Props) {
       initial={false}
       animate={
         chest.opened
-          ? { scale: [1, 1.35, 0], rotate: [0, 8, -8, 0], opacity: [1, 1, 0] }
+          ? { scale: [1, 1.5, 1.2, 0], rotate: [0, -5, 5, 0], opacity: [1, 1, 0.8, 0] }
           : { scale: 1 }
       }
-      transition={{ duration: chest.opened ? 0.6 : 0.15 }}
+      transition={{ duration: chest.opened ? 0.7 : 0.15, times: [0, 0.3, 0.6, 1] }}
       onPointerDown={handleDown}
       onPointerUp={handleUp}
       onPointerLeave={handleLeave}
@@ -239,6 +239,45 @@ export default function Chest({ chest }: Props) {
           </div>
         )}
       </div>
+
+      {/* Эффект открытия — вспышка света + искры */}
+      {chest.opened && (
+        <motion.div
+          className="absolute inset-0 pointer-events-none flex items-center justify-center"
+          initial={{ opacity: 1, scale: 0.5 }}
+          animate={{ opacity: [1, 0.8, 0], scale: [0.5, 2, 3] }}
+          transition={{ duration: 0.7 }}
+          style={{ zIndex: 60 }}
+        >
+          <div
+            className="w-full h-full rounded-full"
+            style={{
+              background: `radial-gradient(circle, ${visual.accent}ff 0%, ${visual.accent}44 40%, transparent 70%)`,
+            }}
+          />
+          {/* Разлетающиеся искры */}
+          {Array.from({ length: 8 }).map((_, i) => {
+            const angle = (i / 8) * Math.PI * 2;
+            const dist = 40 + Math.random() * 30;
+            return (
+              <motion.div
+                key={i}
+                className="absolute w-1.5 h-1.5 rounded-full"
+                style={{ background: visual.accent, boxShadow: `0 0 6px ${visual.accent}` }}
+                initial={{ x: 0, y: 0, opacity: 1 }}
+                animate={{
+                  x: Math.cos(angle) * dist,
+                  y: Math.sin(angle) * dist,
+                  opacity: 0,
+                  scale: 0,
+                }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              />
+            );
+          })}
+        </motion.div>
+      )}
+
       <style jsx>{`
         @keyframes chestPulse {
           0%, 100% { transform: scale(1); }

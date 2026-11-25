@@ -8,6 +8,7 @@ import Onboarding from "@/components/game/Onboarding";
 import { SoundToggle } from "@/components/game/Sound";
 import RarityFlash from "@/components/game/RarityFlash";
 import DailyReward from "@/components/game/DailyReward";
+import LevelUpFlash from "@/components/game/LevelUpFlash";
 
 export const metadata: Metadata = {
   title: "Сундучный Вор: Тёмное Фэнтези",
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <SoundToggle />
           <RarityFlash />
           <DailyReward />
+          <LevelUpFlash />
         </ErrorBoundary>
       </body>
     </html>

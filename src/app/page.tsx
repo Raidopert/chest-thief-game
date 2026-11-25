@@ -160,6 +160,17 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  // Performance: пауза loop когда вкладка не активна
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        document.dispatchEvent(new CustomEvent("game-pause"));
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
   // предотвращаем случайный зум на двойной тап (мобилки)
   useEffect(() => {
     let lastTouch = 0;
@@ -170,6 +181,13 @@ export default function Home() {
     };
     document.addEventListener("touchend", handler, { passive: false });
     return () => document.removeEventListener("touchend", handler);
+  }, []);
+
+  // Performance: пауза loop когда вкладка не активна
+  useEffect(() => {
+    const h = () => { if (document.hidden) document.dispatchEvent(new CustomEvent("game-pause")); };
+    document.addEventListener("visibilitychange", h);
+    return () => document.removeEventListener("visibilitychange", h);
   }, []);
 
   if (!hydrated) {

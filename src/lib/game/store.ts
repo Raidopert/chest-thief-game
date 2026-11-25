@@ -702,6 +702,12 @@ export const useGameStore = create<GameState>()(
             value: item.baseValue,
             fromChest: chestId,
           },
+          // Combo: каждый открытый сундук увеличивает комбо на 1 (макс COMBO_MAX).
+          // Пауза > COMBO_TIMEOUT_MS сбрасывает в checkEvents.
+          combo: {
+            count: Math.min(COMBO_MAX, state.combo.count + 1),
+            lastOpenAt: Date.now(),
+          },
           stats: {
             ...state.stats,
             chestsOpened: state.stats.chestsOpened + 1,
@@ -1270,7 +1276,6 @@ export const useGameStore = create<GameState>()(
           upgrades: {},
           events: { nextGoldenChest: Date.now() + 60_000, nextDemonInvasion: Date.now() + 600_000, demonInvasionUntil: 0 },
           combo: { count: 0, lastOpenAt: 0 },
-          combo: { count: 0, lastOpenAt: 0 },
         });
         return true;
       },
@@ -1527,8 +1532,6 @@ export const useGameStore = create<GameState>()(
         if (!s.combo) s.combo = { count: 0, lastOpenAt: 0 };
         if (s.ultCooldownUntil === undefined) s.ultCooldownUntil = 0;
         if (!s.events) s.events = { nextGoldenChest: Date.now() + 60_000, nextDemonInvasion: Date.now() + 600_000, demonInvasionUntil: 0 };
-        if (!s.combo) s.combo = { count: 0, lastOpenAt: 0 };
-        if (s.ultCooldownUntil === undefined) s.ultCooldownUntil = 0;
         if (s.stats) {
           s.stats.bossKills = s.stats.bossKills ?? 0;
           s.stats.eliteKills = s.stats.eliteKills ?? 0;
@@ -1578,7 +1581,6 @@ export const useGameStore = create<GameState>()(
         prestige: s.prestige,
         upgrades: s.upgrades,
         events: s.events,
-        combo: s.combo,
         combo: s.combo,
         ultCooldownUntil: s.ultCooldownUntil,
       }),

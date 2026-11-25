@@ -184,13 +184,6 @@ export default function Home() {
     return () => document.removeEventListener("touchend", handler);
   }, []);
 
-  // Performance: пауза loop когда вкладка не активна
-  useEffect(() => {
-    const h = () => { if (document.hidden) document.dispatchEvent(new CustomEvent("game-pause")); };
-    document.addEventListener("visibilitychange", h);
-    return () => document.removeEventListener("visibilitychange", h);
-  }, []);
-
   if (!hydrated) {
     // Fallback через 2 сек если persist не загрузился — показываем игру в любом случае
     setTimeout(() => { if (!useGameStore.getState().hydrated) useGameStore.setState({ hydrated: true }); }, 2000);

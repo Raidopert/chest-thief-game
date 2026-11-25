@@ -714,10 +714,12 @@ export const HERO_SKILLS: HeroSkill[] = [
 // ПОДЗЕМЕЛЬЯ / ЭТАЖИ
 // ============================================================================
 export const DUNGEON_KILLS_PER_FLOOR = 50;
-// Линейный рост (было ×1.5 — экспонента, к 10 этажу ×58HP, непроходимо)
-// Теперь ×0.8 за этаж — мягче, всегда пробивается героем
-export const DUNGEON_HP_MULT_PER_FLOOR = 0.8;
-export const DUNGEON_REWARD_MULT_PER_FLOOR = 0.6;
+// Этажи подземелья: HP врага растёт на 12% за этаж, награды на 20%.
+// Этаж 1 = 1.0×, этаж 5 = 1.12^4 ≈ 1.57× HP / 2.07× наград,
+// этаж 10 = 1.12^9 ≈ 2.77× HP / 5.16× наград — мягкая экспонента,
+// герой с хорошего уровня и сет-бонусами проходит.
+export const DUNGEON_HP_MULT_PER_FLOOR = 1.12;
+export const DUNGEON_REWARD_MULT_PER_FLOOR = 1.20;
 export const DUNGEON_NAMES: string[] = [
   "Склеп Тьмы",
   "Костница",

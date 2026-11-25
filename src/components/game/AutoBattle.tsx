@@ -54,6 +54,7 @@ export default function AutoBattle() {
   // Анимация удара — синхронизирована с изменением lastAttackAt в store.
   // Сами тики боя идут в page.tsx (setInterval), чтобы бой работал
   // даже когда вкладка "Герой" не активна.
+  // Полный цикл взмаха: замах → удар → отскок → возврат = 450мс.
   const lastAttackAt = battle.lastAttackAt;
   useEffect(() => {
     if (!lastAttackAt) return;
@@ -61,20 +62,23 @@ export default function AutoBattle() {
     const raf = requestAnimationFrame(() => {
       setAttackAnim(1);
       setHitFlash(true);
-      // спавним частицы крови — 6-8 штук разлетающихся от врага
-      const count = 6 + Math.floor(Math.random() * 3);
+      // спавним частицы крови — 8-12 штук разлетающихся от врага
+      const count = 8 + Math.floor(Math.random() * 5);
       const newParts = Array.from({ length: count }, () => ({
         id: ++particleCounter.current,
-        dx: (Math.random() - 0.5) * 80,
-        dy: -20 - Math.random() * 50,
-        size: 4 + Math.random() * 5,
+        dx: (Math.random() - 0.5) * 100,
+        dy: -25 - Math.random() * 60,
+        size: 4 + Math.random() * 6,
         rotate: (Math.random() - 0.5) * 360,
       }));
       setBloodParticles(newParts);
     });
-    const t1 = setTimeout(() => setAttackAnim(0), 200);
-    const t2 = setTimeout(() => setHitFlash(false), 150);
-    const t3 = setTimeout(() => setBloodParticles([]), 700);
+    // Анимация меча длится 450мс — синхронизируем сброс с ней
+    const t1 = setTimeout(() => setAttackAnim(0), 450);
+    // Хит-флэш и след клинка гаснут чуть раньше
+    const t2 = setTimeout(() => setHitFlash(false), 200);
+    // Частицы крови падают под гравитацией ~800мс
+    const t3 = setTimeout(() => setBloodParticles([]), 800);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(t1);
@@ -158,71 +162,185 @@ export default function AutoBattle() {
           </g>
         </svg>
 
-        {/* рука героя с мечом — справа, от плеча до кисти */}
-        <div className="absolute right-0 top-0 bottom-0 w-[45%] pointer-events-none">
+        {/* рука героя с мечом — справа, от плеча до кисти.
+            Готическая латная рука с детальным мечом.
+            Анимация: замах → удар → отскок → возврат. */}
+        <div className="absolute right-0 top-0 bottom-0 w-[48%] pointer-events-none">
           <motion.svg
-            viewBox="0 0 100 200"
+            viewBox="0 0 100 220"
+            preserveAspectRatio="xMaxYMid meet"
             className="w-full h-full"
+            style={{ transformOrigin: "82px 32px", filter: attackAnim ? "drop-shadow(0 0 6px rgba(220,38,38,0.55))" : "drop-shadow(0 0 4px rgba(0,0,0,0.6))" }}
             animate={{
-              rotate: attackAnim ? [-20, 15, -8, -20] : -20,
-              x: attackAnim ? [0, -15, -5, 0] : 0,
+              rotate: attackAnim ? [-8, -28, 26, -4, -8] : -8,
+              x: attackAnim ? [0, 6, -10, 2, 0] : 0,
             }}
-            transition={{ duration: 0.25, times: [0, 0.3, 0.6, 1], ease: "easeOut" }}
-            style={{ transformOrigin: "90px 30px" }}
+            transition={{ duration: 0.45, times: [0, 0.22, 0.5, 0.72, 1], ease: "easeOut" }}
           >
-            {/* латное плечо — наплечник с шипами */}
-            <ellipse cx="90" cy="30" rx="16" ry="15" fill="#2a2a35" stroke="#0a0a0f" strokeWidth="1.5" />
-            <ellipse cx="90" cy="28" rx="13" ry="11" fill="#3a3a45" stroke="#0a0a0f" strokeWidth="1" />
-            {/* шип на наплечнике */}
-            <path d="M 90 13 L 93 22 L 87 22 Z" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="0.8" />
-            {/* заклёпки */}
-            <circle cx="84" cy="32" r="1.2" fill="#71717a" />
-            <circle cx="96" cy="32" r="1.2" fill="#71717a" />
+            <defs>
+              <linearGradient id="bladeGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#64748b" />
+                <stop offset="45%" stopColor="#cbd5e1" />
+                <stop offset="55%" stopColor="#f1f5f9" />
+                <stop offset="100%" stopColor="#64748b" />
+              </linearGradient>
+              <linearGradient id="armorGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#52525b" />
+                <stop offset="50%" stopColor="#3a3a45" />
+                <stop offset="100%" stopColor="#1c1c25" />
+              </linearGradient>
+              <radialGradient id="pauldronGrad" cx="0.35" cy="0.35" r="0.7">
+                <stop offset="0%" stopColor="#52525b" />
+                <stop offset="60%" stopColor="#3a3a45" />
+                <stop offset="100%" stopColor="#1c1c25" />
+              </radialGradient>
+            </defs>
 
-            {/* рука — латный бицепс+предплечье с сегментами */}
+            {/* === НАПЛЕЧНИК (pauldron) с шипами === */}
+            {/* Внешнее кольцо */}
+            <ellipse cx="82" cy="32" rx="20" ry="18" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="1.6" />
+            {/* Основной купол наплечника */}
+            <ellipse cx="82" cy="30" rx="17" ry="15" fill="url(#pauldronGrad)" stroke="#0a0a0f" strokeWidth="1" />
+            {/* Блик на куполе */}
+            <ellipse cx="76" cy="25" rx="6" ry="3.5" fill="#71717a" opacity="0.55" />
+            {/* 3 шипа на наплечнике */}
+            <path d="M 72 18 L 74 6 L 76 18 Z" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="0.7" />
+            <path d="M 82 16 L 84 4 L 86 16 Z" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="0.7" />
+            <path d="M 90 18 L 92 7 L 94 18 Z" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="0.7" />
+            {/* Заклёпки */}
+            <circle cx="72" cy="34" r="1.4" fill="#a1a1aa" />
+            <circle cx="92" cy="34" r="1.4" fill="#a1a1aa" />
+            <circle cx="82" cy="42" r="1.4" fill="#a1a1aa" />
+
+            {/* === ПЛЕЧО (upper arm) — сегментированный латный рукав === */}
             <path
-              d="M 88 38 Q 80 60 75 90 Q 70 120 72 150 Q 80 158 88 150 Q 92 120 90 90 Q 95 60 96 40 Z"
-              fill="#3a3a45"
+              d="M 78 44 Q 70 70 64 96 Q 60 102 54 100 Q 60 72 72 46 Z"
+              fill="url(#armorGrad)"
               stroke="#0a0a0f"
-              strokeWidth="1.5"
+              strokeWidth="1.4"
             />
-            {/* локтевой сегмент */}
-            <ellipse cx="74" cy="90" rx="6" ry="5" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="1" />
-            {/* предплечье — латная трубка с ребрами */}
-            <path d="M 71 110 L 71 140 M 76 110 L 76 140 M 80 110 L 80 140" stroke="#1c1c25" strokeWidth="0.6" />
+            {/* Линии сочленения пластин */}
+            <path d="M 71 58 Q 68 60 67 62" stroke="#0a0a0f" strokeWidth="0.6" fill="none" />
+            <path d="M 68 72 Q 65 74 64 76" stroke="#0a0a0f" strokeWidth="0.6" fill="none" />
+            <path d="M 65 86 Q 62 88 61 90" stroke="#0a0a0f" strokeWidth="0.6" fill="none" />
+            {/* Блик на бицепсе */}
+            <path d="M 73 50 Q 70 65 66 88" stroke="#52525b" strokeWidth="0.8" fill="none" opacity="0.6" />
 
-            {/* кисть — латная перчатка */}
-            <ellipse cx="80" cy="155" rx="8" ry="9" fill="#2a2a35" stroke="#0a0a0f" strokeWidth="1.5" />
-            {/* суставы пальцев */}
-            <circle cx="76" cy="158" r="1.5" fill="#1c1c25" />
-            <circle cx="80" cy="160" r="1.5" fill="#1c1c25" />
-            <circle cx="84" cy="158" r="1.5" fill="#1c1c25" />
+            {/* === ЛОКОТЬ (elbow cop) с шипом === */}
+            <ellipse cx="56" cy="100" rx="10" ry="8" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="1.5" />
+            <ellipse cx="54" cy="98" rx="7" ry="5.5" fill="url(#armorGrad)" stroke="#0a0a0f" strokeWidth="0.9" />
+            {/* Шип на локте */}
+            <path d="M 47 100 L 40 95 L 47 105 Z" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="0.7" />
+            {/* Блик на локте */}
+            <ellipse cx="51" cy="96" rx="3" ry="1.5" fill="#71717a" opacity="0.6" />
 
-            {/* оружие в руке — готический меч */}
+            {/* === ПРЕДПЛЕЧЬЕ (forearm) — латная трубка с рёбрами === */}
+            <path
+              d="M 52 108 Q 45 130 42 152 Q 47 158 53 154 Q 58 130 60 110 Z"
+              fill="url(#armorGrad)"
+              stroke="#0a0a0f"
+              strokeWidth="1.4"
+            />
+            {/* Рёбра предплечья (горизонтальные линии) */}
+            <line x1="46" y1="120" x2="55" y2="118" stroke="#0a0a0f" strokeWidth="0.7" />
+            <line x1="44" y1="132" x2="54" y2="130" stroke="#0a0a0f" strokeWidth="0.7" />
+            <line x1="42" y1="144" x2="53" y2="142" stroke="#0a0a0f" strokeWidth="0.7" />
+            {/* Блик на предплечье */}
+            <path d="M 56 112 Q 53 130 50 150" stroke="#52525b" strokeWidth="0.7" fill="none" opacity="0.6" />
+
+            {/* === КИСТЬ — латная перчатка (gauntlet) === */}
+            {/* Запястная манжета */}
+            <rect x="38" y="152" width="16" height="7" rx="2.5" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="1.2" />
+            {/* Основная пластина кулака */}
+            <path
+              d="M 36 158 Q 36 172 44 176 Q 52 176 56 168 L 56 158 Z"
+              fill="url(#armorGrad)"
+              stroke="#0a0a0f"
+              strokeWidth="1.4"
+            />
+            {/* Сочленение пальцев (вертикальные линии) */}
+            <line x1="40" y1="162" x2="40" y2="172" stroke="#0a0a0f" strokeWidth="0.55" />
+            <line x1="44" y1="163" x2="44" y2="174" stroke="#0a0a0f" strokeWidth="0.55" />
+            <line x1="48" y1="163" x2="48" y2="174" stroke="#0a0a0f" strokeWidth="0.55" />
+            <line x1="52" y1="162" x2="52" y2="170" stroke="#0a0a0f" strokeWidth="0.55" />
+            {/* Большой палец */}
+            <ellipse cx="58" cy="162" rx="3.5" ry="4.5" fill="url(#armorGrad)" stroke="#0a0a0f" strokeWidth="0.9" />
+            {/* Блик на кулаке */}
+            <ellipse cx="42" cy="161" rx="3" ry="2" fill="#71717a" opacity="0.55" />
+            {/* Заклёпка на манжете */}
+            <circle cx="46" cy="155.5" r="1" fill="#a1a1aa" />
+
+            {/* === ОРУЖИЕ — готический меч или латный кулак === */}
             {equippedRight ? (
-              <>
-                {/* рукоять — обмотана тёмной кожей */}
-                <rect x="78" y="155" width="5" height="14" fill="#3a2a18" stroke="#0a0a0f" strokeWidth="0.5" transform="rotate(15 80 162)" />
-                <path d="M 78 158 L 82 162 M 78 162 L 82 166" stroke="#1a1208" strokeWidth="0.6" transform="rotate(15 80 162)" />
-                {/* гарда — крестовина */}
-                <path d="M 65 167 L 95 167 L 95 171 L 65 171 Z" fill="#71717a" stroke="#0a0a0f" strokeWidth="0.8" transform="rotate(15 80 168)" />
-                {/* клинок — широкий с кровостоком */}
-                <motion.path
-                  d="M 80 168 L 35 110 L 38 105 L 83 163 Z"
-                  fill="#cbd5e1"
-                  stroke="#94a3b8"
-                  strokeWidth="1"
+              <g>
+                {/* Навершие (pommel) — бронзовый шар с гравировкой */}
+                <circle cx="46" cy="178" r="4" fill="#713f12" stroke="#0a0a0f" strokeWidth="0.9" />
+                <circle cx="44.5" cy="176.5" r="1.8" fill="#a16207" />
+                <circle cx="46" cy="178" r="1" fill="#fbbf24" opacity="0.85" />
+
+                {/* Рукоять — кожаная обмотка крест-накрест */}
+                <rect x="43.5" y="158" width="5" height="20" rx="1.2" fill="#3a2a18" stroke="#0a0a0f" strokeWidth="0.9" />
+                {/* Обмотка рукояти */}
+                <line x1="43.5" y1="161" x2="48.5" y2="163" stroke="#1a1208" strokeWidth="0.55" />
+                <line x1="43.5" y1="165" x2="48.5" y2="167" stroke="#1a1208" strokeWidth="0.55" />
+                <line x1="43.5" y1="169" x2="48.5" y2="171" stroke="#1a1208" strokeWidth="0.55" />
+                <line x1="43.5" y1="173" x2="48.5" y2="175" stroke="#1a1208" strokeWidth="0.55" />
+
+                {/* Гарда (cross-guard) — готическая с загнутыми концами и декором */}
+                <path
+                  d="M 28 158 Q 22 154 26 148 L 35 152 L 46 154 L 57 152 L 66 148 Q 70 154 64 158 L 46 160 Z"
+                  fill="#52525b"
+                  stroke="#0a0a0f"
+                  strokeWidth="1.1"
                 />
-                {/* блик на клинке */}
-                <path d="M 75 165 L 40 115 L 42 113 L 77 163 Z" fill="#e5e7eb" />
-                {/* кровосток */}
-                <path d="M 80 168 L 40 117" stroke="#71717a" strokeWidth="0.6" fill="none" />
-                {/* капля крови на кончике */}
-                <circle cx="36" cy="108" r="1.5" fill="#dc2626" opacity="0.85" />
-              </>
+                {/* Блик на гарде */}
+                <path d="M 30 156 L 46 157 L 62 156" stroke="#a1a1aa" strokeWidth="0.55" fill="none" />
+                {/* Центральный кабошон на гарде — аметист */}
+                <circle cx="46" cy="155" r="1.7" fill="#a855f7" stroke="#0a0a0f" strokeWidth="0.4" />
+                <circle cx="45.5" cy="154.5" r="0.7" fill="#d8b4fe" />
+
+                {/* Клинок — длинный, с долом (fuller) и гравировкой */}
+                {/* Основное лезвие: от гарды (46, 154) к острию (50, 24) */}
+                <path
+                  d="M 42 154 L 50 24 L 54 154 Z"
+                  fill="url(#bladeGrad)"
+                  stroke="#94a3b8"
+                  strokeWidth="0.9"
+                />
+                {/* Дол (кровосток) — центральная линия */}
+                <line x1="50" y1="32" x2="50" y2="152" stroke="#475569" strokeWidth="0.9" fill="none" />
+                <line x1="50.5" y1="34" x2="50.5" y2="150" stroke="#cbd5e1" strokeWidth="0.4" fill="none" opacity="0.7" />
+
+                {/* Блик на клинке (вертикальный) */}
+                <path d="M 48 145 L 49.5 28 L 50.5 28 L 51 145 Z" fill="#f8fafc" opacity="0.55" />
+
+                {/* Заточенное остриё (тёмный оттенок) */}
+                <path d="M 47 35 L 50 24 L 53 35 Z" fill="#cbd5e1" opacity="0.75" />
+
+                {/* Готическая гравировка на клинке — крест с кровавым камнем */}
+                <path d="M 47 78 L 53 78 M 50 75 L 50 81" stroke="#1c1c25" strokeWidth="0.5" fill="none" />
+                <circle cx="50" cy="78" r="1.2" fill="#dc2626" opacity="0.85" />
+
+                {/* Вторая гравировка ниже — руна */}
+                <path d="M 48 110 L 52 110 M 49 108 L 49 114 M 51 108 L 51 114" stroke="#1c1c25" strokeWidth="0.4" fill="none" opacity="0.7" />
+
+                {/* Капля крови на острие */}
+                <circle cx="50" cy="22" r="1.4" fill="#dc2626" opacity="0.9" />
+                <circle cx="49.6" cy="21.5" r="0.5" fill="#fca5a5" opacity="0.7" />
+              </g>
             ) : (
-              // латный кулак без оружия
-              <ellipse cx="80" cy="158" rx="10" ry="10" fill="#2a2a35" stroke="#0a0a0f" strokeWidth="2" />
+              /* Без оружия — латный кулак с шипами */
+              <g>
+                {/* Утолщённый кулак */}
+                <ellipse cx="46" cy="166" rx="11" ry="12" fill="url(#armorGrad)" stroke="#0a0a0f" strokeWidth="1.6" />
+                {/* Шипы на костяшках */}
+                <path d="M 38 158 L 39 152 L 40 158 Z" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="0.7" />
+                <path d="M 43 157 L 44 151 L 45 157 Z" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="0.7" />
+                <path d="M 48 157 L 49 151 L 50 157 Z" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="0.7" />
+                <path d="M 53 158 L 54 152 L 55 158 Z" fill="#1c1c25" stroke="#0a0a0f" strokeWidth="0.7" />
+                {/* Блик */}
+                <ellipse cx="42" cy="160" rx="4" ry="3" fill="#71717a" opacity="0.5" />
+              </g>
             )}
           </motion.svg>
         </div>
@@ -332,13 +450,98 @@ export default function AutoBattle() {
           {hitFlash && (
             <motion.div
               className="absolute left-[25%] top-1/2 -translate-y-1/2 pointer-events-none"
-              initial={{ opacity: 0.8, scale: 0.5 }}
-              animate={{ opacity: 0, scale: 1.6 }}
+              initial={{ opacity: 0.85, scale: 0.5 }}
+              animate={{ opacity: 0, scale: 1.8 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
+              transition={{ duration: 0.22 }}
             >
               <div className="text-3xl">💥</div>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* След клинка — белая дуга появляется при ударе */}
+        <AnimatePresence>
+          {attackAnim > 0 && (
+            <motion.div
+              className="absolute pointer-events-none"
+              style={{
+                left: "15%",
+                top: "15%",
+                width: "65%",
+                height: "70%",
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0, 0.95, 0.7, 0] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.45, times: [0, 0.2, 0.5, 0.7, 1], ease: "easeOut" }}
+            >
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+                {/* Внешний красный glow-слой */}
+                <motion.path
+                  d="M 88 12 Q 50 32 15 78"
+                  stroke="#dc2626"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  fill="none"
+                  opacity="0.6"
+                  style={{ filter: "blur(3px)" }}
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.22, times: [0, 1], ease: "easeOut" }}
+                />
+                {/* Основной белый след клинка */}
+                <motion.path
+                  d="M 88 12 Q 50 32 15 78"
+                  stroke="white"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                  fill="none"
+                  style={{ filter: "drop-shadow(0 0 8px rgba(255,255,255,0.95))" }}
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                />
+                {/* Внутренний яркий блик */}
+                <motion.path
+                  d="M 88 12 Q 50 32 15 78"
+                  stroke="#fef2f2"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  fill="none"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.17, ease: "easeOut" }}
+                />
+              </svg>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Искры от удара — маленькие белые частицы */}
+        <AnimatePresence>
+          {hitFlash && (
+            <div className="absolute left-[25%] top-1/2 -translate-y-1/2 pointer-events-none">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <motion.div
+                  key={`spark-${lastAttackAt}-${i}`}
+                  className="absolute rounded-full"
+                  style={{
+                    width: 2 + Math.random() * 2,
+                    height: 2 + Math.random() * 2,
+                    background: "white",
+                    boxShadow: "0 0 4px rgba(255,255,255,0.9)",
+                  }}
+                  initial={{ x: 0, y: 0, opacity: 1 }}
+                  animate={{
+                    x: (Math.random() - 0.5) * 60,
+                    y: (Math.random() - 0.5) * 60,
+                    opacity: [1, 0],
+                  }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                />
+              ))}
+            </div>
           )}
         </AnimatePresence>
 

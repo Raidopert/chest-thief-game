@@ -11,6 +11,7 @@ import {
   HERO_SKILLS,
   type ItemStats,
 } from "@/lib/game/config";
+import { assetUrl } from "@/lib/utils";
 
 // Вычисление статов героя (дублирует логику store, чтобы не вызывать селектор-функцию)
 function computeStats(equipped: Record<string, { stats: ItemStats } | undefined>, heroLevel: number): ItemStats {
@@ -141,7 +142,7 @@ export default function AutoBattle() {
         className="relative w-full rounded-xl overflow-hidden border border-zinc-700"
         style={{
           aspectRatio: "1 / 1",
-          backgroundImage: "url('bg/battle-bg-new.png')",
+          backgroundImage: `url('${assetUrl("bg/battle-bg-new.png")}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}

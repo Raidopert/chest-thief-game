@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useGameStore } from "@/lib/game/store";
 import { CHEST_VISUALS, KEY_BY_ID } from "@/lib/game/config";
 import type { SpawnedChest } from "@/lib/game/config";
+import { assetUrl } from "@/lib/utils";
 
 interface Props {
   chest: SpawnedChest;
@@ -141,7 +142,7 @@ export default function Chest({ chest }: Props) {
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: `url('${visual.image}')`,
+            backgroundImage: `url('${assetUrl(visual.image)}')`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             filter: visual.filter,

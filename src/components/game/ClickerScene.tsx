@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sounds } from "./Sound";
 import { useGameStore } from "@/lib/game/store";
 import { KEY_TYPES } from "@/lib/game/config";
+import { assetUrl } from "@/lib/utils";
 
 interface FloatNumber { id: number; x: number; y: number; text: string; color: string; }
 let floatCounter = 0;
@@ -62,7 +63,7 @@ export default function ClickerScene() {
           <div
             className="absolute inset-0"
             style={{
-              backgroundImage: "url('bg/thief-new.png')",
+              backgroundImage: `url('${assetUrl("bg/thief-new.png")}')`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               transform: vibrate ? "translate(2px, -1px) scale(1.02)" : "translate(0, 0)",

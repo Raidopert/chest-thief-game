@@ -13,6 +13,7 @@ import {
   type ItemStats,
 } from "@/lib/game/config";
 import { itemCategory } from "@/lib/game/items";
+import { assetUrl } from "@/lib/utils";
 
 interface Props {
   onPickItemForSlot?: (slot: EquipSlotId) => void;
@@ -61,7 +62,7 @@ export default function HeroInventory({ onPickItemForSlot }: Props) {
     <div
       className="relative rounded-2xl gothic-panel overflow-hidden p-3 md:p-4"
       style={{
-        backgroundImage: "url('bg/hero-bg-new.png')",
+        backgroundImage: `url('${assetUrl("bg/hero-bg-new.png")}')`,
         backgroundSize: "cover",
         backgroundPosition: "center top",
       }}
@@ -103,7 +104,7 @@ export default function HeroInventory({ onPickItemForSlot }: Props) {
         <div
           className="absolute inset-0 rounded-xl overflow-hidden"
           style={{
-            backgroundImage: "url('bg/hero-art.png')",
+            backgroundImage: `url('${assetUrl("bg/hero-art.png")}')`,
             backgroundSize: "cover",
             backgroundPosition: "center top",
             opacity: 0.85,

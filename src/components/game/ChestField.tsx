@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useGameStore } from "@/lib/game/store";
 import Chest from "./Chest";
+import { assetUrl } from "@/lib/utils";
 
 export default function ChestField() {
   const chests = useGameStore((s) => s.chests);
@@ -46,7 +47,7 @@ export default function ChestField() {
       <div
         className="absolute inset-0 transition-transform duration-200 ease-out"
         style={{
-          backgroundImage: "url('bg/field-bg-new.png')",
+          backgroundImage: `url('${assetUrl("bg/field-bg-new.png")}')`,
           backgroundSize: "120%",
           backgroundPosition: "center",
           transform: `translate(${parallax.x}px, ${parallax.y}px)`,
